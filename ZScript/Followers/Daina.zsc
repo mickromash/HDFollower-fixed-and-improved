@@ -1,0 +1,35 @@
+class FollowerDaina : HDFollower
+{
+	override void GiveStartingItems(string input)
+	{
+		Super.GiveStartingItems(hdf_loadout_daina);
+	}
+
+	Default
+	{
+		SeeSound "Follower/Daina/See";
+		PainSound "Follower/Daina/Pain";
+		DeathSound "Follower/Daina/Death";
+		Tag "$TAG_DAINA";
+		HDFollower.UnLocalizeTag "Daina";
+		HDFollower.FollowerInfo GENDER_FEMALE, 'FollowerBodyDaina', 'LeftBehindDaina';
+	}
+
+	States
+	{
+		Spawn:
+			FLW4 A 0;
+			Goto Super::Spawn;
+	}
+}
+
+class LeftBehindDaina : LeftBehindFollower {}
+
+class FollowerBodyDaina : FollowerBody
+{
+	Default
+	{
+		Inventory.Icon "FOLLD0";
+		Tag "$TAG_DAINA";
+	}
+}

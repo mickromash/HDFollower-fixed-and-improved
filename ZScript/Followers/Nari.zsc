@@ -1,0 +1,36 @@
+class FollowerNari : HDFollower
+{
+	override void GiveStartingItems(string input)
+	{
+		Super.GiveStartingItems(hdf_loadout_nari);
+	}
+
+	Default
+	{
+		SeeSound "Follower/Nari/See";
+		PainSound "Follower/Nari/Pain";
+		DeathSound "Follower/Nari/Death";
+		Tag "$TAG_NARI";
+		HDFollower.UnLocalizeTag "Nari";
+		HDFollower.FollowerInfo GENDER_FEMALE, 'FollowerBodyNari', 'LeftBehindNari';
+		HDFollower.ResurrectType RESF_BLUES | RESF_MERCHANT;
+	}
+
+	States
+	{
+		Spawn:
+			FLW6 A 0;
+			Goto Super::Spawn;
+	}
+}
+
+class LeftBehindNari : LeftBehindFollower {}
+
+class FollowerBodyNari : FollowerBody
+{
+	Default
+	{
+		Inventory.Icon "FOLLF0";
+		Tag "$TAG_NARI";
+	}
+}

@@ -1,0 +1,38 @@
+class FollowerBalthazar : HDFollower
+{
+	override void GiveStartingItems(string input)
+	{
+		Super.GiveStartingItems(hdf_loadout_balthazar);
+	}
+
+	Default
+	{
+		SeeSound "Follower/Balthazar/See";
+		PainSound "Follower/Balthazar/Pain";
+		DeathSound "Follower/Balthazar/Death";
+		Tag "$TAG_Balthazar";
+		HDFollower.UnLocalizeTag "Balthazar";
+		+HDMOBBASE.HASHELMET
+		HDFollower.FollowerInfo GENDER_MALE, 'FollowerBodyBalthazar', 'LeftBehindBalthazar';
+		Scale 0.9;
+		-DONTTRANSLATE
+	}
+
+	States
+	{
+		Spawn:
+			FLW2 A 0;
+			Goto Super::Spawn;
+	}
+}
+
+class LeftBehindBalthazar : LeftBehindFollower {}
+
+class FollowerBodyBalthazar : FollowerBody
+{
+	Default
+	{
+		Inventory.Icon "FOLLB0";
+		Tag "$TAG_Balthazar";
+	}
+}

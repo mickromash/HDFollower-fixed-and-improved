@@ -1,0 +1,116 @@
+extend class HDFollower
+{
+	enum PrintMessageLevel
+	{
+		PMType_Forced,
+		PMType_Critical,
+		PMType_Important,
+		PMType_General
+	}
+	
+	// --------------------------------------------------
+	// STATIC
+	// --------------------------------------------------
+
+	static void ChatMessage(HDFollower flw, Actor other, string message)
+	{
+		String FLWTag = flw.GetTag();
+		other.A_Log("\c[White]"..FLWTag..": \c[Green]"..message.."\c-", true);
+		other.A_StartSound("misc/chat", 20, CHANF_LOCAL);
+	}
+
+	static void ThinkMessage(Actor other, string message)
+	{
+		other.A_Print(StringTable.Localize(message));
+	}
+
+	// --------------------------------------------------
+	// VIRTUAL
+	// --------------------------------------------------
+
+	protected virtual string GetLocalizationTag() const
+	{
+		String FLWTag=GetTag();
+		if(UnLocalizeTag!="")FLWTag = UnLocalizeTag;
+		return FLWTag;
+	}
+
+	// --------------------------------------------------
+	// ACTIONS
+	// --------------------------------------------------
+
+	private void ResetCommentTimer()
+	{
+		CommentTimer = random(35 * 15, 35 * 50);
+	}
+
+	protected void PlayIdleComment()
+	{
+		if (!CVar.GetCVar('hdf_enablecomments', LinkedPlayer.player).GetBool())
+		{
+			return;
+		}
+
+		if (SeeSound != "")
+		{
+			A_Vocalize(SeeSound, CHANF_OVERLAP);
+		}
+		else
+		{
+			// [Ace] This is called "see" to be consistent with SeeSound. It's for the idle comments and not the actual "see" sound.
+			string response = GetResponse("SEE");
+			if (response != "")
+			{
+				ChatMessage(self, LinkedPlayer, response);
+			}
+		}
+		ResetCommentTimer();
+	}
+
+	protected void PrintMessage(string message, string voiceLine, PrintMessageLevel level)
+	{
+		if (Health <= 0 || bSILENT)
+		{
+			return;
+		}
+
+		if (message != "" && level <= CVar.GetCVar('hdf_printlevel_chat', LinkedPlayer.player).GetInt())
+		{
+			ChatMessage(self, LinkedPlayer, message);
+		}
+
+		if (level <= CVar.GetCVar('hdf_printlevel_voice', LinkedPlayer.player).GetInt())
+		{
+			voiceLine = "Follower/"..GetLocalizationTag().."/"..voiceLine;
+			if (Distance3D(LinkedPlayer) < 512)
+			{
+				A_StartSound(voiceLine, 21);
+			}
+			else
+			{
+				LinkedPlayer.A_StartSound(voiceLine, 21, CHANF_LOCAL);
+			}
+		}
+	}
+
+	// --------------------------------------------------
+	// INFORMATION
+	// --------------------------------------------------
+
+	// [Ace] Looks up the response in LANGUAGE and picks a random one out of the existing, unless none exist, in which case it'll return the raw string or an empty one.
+	protected string GetResponse(string raw)
+	{
+		raw = ("$"..GetLocalizationTag().."_"..raw).MakeUpper();
+		int MaxIndex = 0;
+		for (int i = 1; i <= 20; ++i) // [Ace] 20 should be enough.
+		{
+			if ("$"..StringTable.Localize(raw.."_"..i) != raw.."_"..i)
+			{
+				MaxIndex++;
+			}
+		}
+
+		string Localized = StringTable.Localize(raw.."_"..random[responserand](1, MaxIndex));
+		return MaxIndex > 0 ? Localized : "";
+	}
+}

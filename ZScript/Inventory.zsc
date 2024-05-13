@@ -1,0 +1,410 @@
+class InventorySlot
+{
+	class<Inventory> ItemClass;
+	string Icon;
+	int Amount;
+	bool Multipickup;
+
+	static clearscope bool IsRealMag(class<Inventory> mag)
+	{
+		return mag is 'HDMagAmmo' && GetDefaultByType((class<HDMagAmmo>)(mag)).MaxPerUnit > 0;
+	}
+}
+
+extend class HDFollower
+{
+	enum FollowerInventoryFlags
+	{
+		FIF_FORCE = 1,
+		FIF_REVERSEDIRECTION = 2,
+		FIF_REMOVE = 4, // [Ace] TakeInvItem only.
+	}
+
+	// --------------------------------------------------
+	// VIRTUALS
+	// --------------------------------------------------
+
+	virtual clearscope bool IsValidItem(class<Inventory> cls, bool ignoreWeaponValidity = false)
+	{
+		return cls && ((cls is 'HDAmmo' && AmmoIsUsed((class<HDAmmo>)(cls)) || ignoreWeaponValidity) || cls == 'PortableMedikit' || cls == 'PortableStimpack' || cls == 'HDHealingPotion');
+	}
+
+	// --------------------------------------------------
+	// ACTIONS
+	// --------------------------------------------------
+
+	// [Ace] Currently unused.
+	protected void InventoryThink()
+	{
+		
+	}
+
+	// [Ace] Anything that's not a mag. Including loose ammo.
+	bool AddItem(Inventory item, int amt = 1, int maxAmt = MaxLooseAmmoAmount, int slot = -1, int flags = 0)
+	{
+		if (!(flags & FIF_FORCE))
+		{
+			switch (CanReach(MaxInventoryDistance))
+			{
+				case 1: ThinkMessage(LinkedPlayer, "$TOOFAR_PLR"); return false;
+				case 2: ThinkMessage(LinkedPlayer, "$NOTFACING_PLR"); return false;
+			}
+		}
+
+		if (HDPickup(item) && !HDPickup(item).bMULTIPICKUP)
+		{
+			maxAmt = 1;
+		}
+
+		while (amt > 0 && item.Amount > 0)
+		{
+			// [Ace] Always fill partials first.
+			int index = GetPartialItemIndex(item.GetClass(), maxAmt: maxAmt);
+			if (index == -1)
+			{
+				if (flags & FIF_REVERSEDIRECTION)
+				{
+					index = GetLastEmptySlotIndex(slot == -1 ? SlotCount - 1 : slot);
+				}
+				else
+				{
+					index = GetFirstEmptySlotIndex(slot == -1 ? 0 : slot);
+				}
+
+				if (index == -1)
+				{
+					return false;
+				}
+			}
+
+			if (!Slots[index])
+			{
+				Slots[index] = new('InventorySlot');
+			}
+			Slots[index].ItemClass = item.GetClass();
+			Slots[index].Icon = TexMan.GetName(item.Icon);
+			Slots[index].Multipickup = HDPickup(item) ? HDPickup(item).bMULTIPICKUP : false;
+			int leftInSlot = maxAmt - Slots[index].Amount;
+			int toAdd = min(leftInSlot, amt, item.Amount);
+			item.Amount -= toAdd;
+			Slots[index].Amount += toAdd;
+			amt -= toAdd;
+
+			if (item.Amount == 0)
+			{
+				item.Destroy();
+				break;
+			}
+
+			if (hdf_debug & FDebug_Inventory)
+			{
+				Console.Printf("[%s, %s], slot %i: added ITEM %s with an amount of %i.", GetTimestamp(), GetTag(), index, Slots[index].ItemClass.GetClassName(), Slots[index].Amount);
+			}
+		}
+
+		return true;
+	}
+
+	// [Ace] Used for mags.
+	bool AddMag(HDMagAmmo mag, int magIndex = -1, int slot = -1, int flags = 0)
+	{
+		if (!(flags & FIF_FORCE))
+		{
+			switch (CanReach(MaxInventoryDistance))
+			{
+				case 1: ThinkMessage(LinkedPlayer, "$TOOFAR_PLR"); return false;
+				case 2: ThinkMessage(LinkedPlayer, "$NOTFACING_PLR"); return false;
+			}
+		}
+
+		int index = -1;
+		if (flags & FIF_REVERSEDIRECTION)
+		{
+			index = GetLastEmptySlotIndex(slot == -1 ? SlotCount - 1 : slot);
+		}
+		else
+		{
+			index = GetFirstEmptySlotIndex(slot == -1 ? 0 : slot);
+		}
+		if (index == -1)
+		{
+			return false;
+		}
+
+		if (!Slots[index])
+		{
+			Slots[index] = new('InventorySlot');
+		}
+		Slots[index].ItemClass = mag.GetClass();
+		Slots[index].Multipickup = false;
+		if (magIndex == -1)
+		{
+			magIndex = mag.Mags.Size() - 1;
+		}
+		int magAmt = mag.Mags[magIndex];
+		Slots[index].Icon = mag.getmagsprite(magAmt);//ItemStorage.GetIcon(mag);
+		//Slots[index].Icon = ""..mag.Icon;//ItemStorage.GetIcon(mag, magAmt);
+		Slots[index].Amount = magAmt;
+		mag.Mags.Delete(magIndex);
+		mag.Amount--;
+		if (mag.Amount == 0)
+		{
+			mag.Destroy();
+		}
+		if (hdf_debug & FDebug_Inventory)
+		{
+			Console.Printf("[%s, %s], slot %i: added MAG %s with an amount of %i.", GetTimestamp(), GetTag(), index, Slots[index].ItemClass.GetClassName(), Slots[index].Amount);
+		}
+
+		return true;
+	}
+
+	override void ClearInventory()
+	{
+		for (int i = 0; i < SlotCount; ++i)
+		{
+			if (Slots[i])
+			{
+				Slots[i].Destroy();
+			}
+		}
+		Super.ClearInventory();
+	}
+
+	void DropInvItem(InventorySlot slot, int flags = 0)
+	{
+		if (!slot || !CanInteractWith() && !(flags & FIF_FORCE))
+		{
+			return;
+		}
+
+		if (!(flags & FIF_FORCE) && Health <= 0)
+		{
+			switch (CanReach(MaxInventoryDistance))
+			{
+				case 1: ThinkMessage(LinkedPlayer, "$TOOFAR_PLR"); return;
+				case 2: ThinkMessage(LinkedPlayer, "$NOTFACING_PLR"); return;
+			}
+		}
+
+		if (hdf_debug & FDebug_Inventory)
+		{
+			for (int i = 0; i < SlotCount; ++i)
+			{
+				if (Slots[i] == slot)
+				{
+					Console.Printf("[%s, %s], slot %i: dropped %s with an amount of %i.", GetTimestamp(), GetTag(), i, slot.ItemClass.GetClassName(), slot.Amount);
+					break;
+				}
+			}
+		}
+
+		// [Ace] HMMMMMM THIS CODE LOOKS FAMILIAR.
+		Inventory spawned = Inventory(Actor.Spawn(slot.ItemClass, pos + (0, 0, height / 2)));
+		if (slot.ItemClass is 'HDMagAmmo')
+		{
+			HDMagAmmo(spawned).Mags[0] = slot.Amount;
+		}
+		else
+		{
+			spawned.Amount = slot.Amount;
+		}
+		spawned.angle = angle;
+		spawned.A_ChangeVelocity(1.5, 0, 1, CVF_RELATIVE);
+		spawned.vel += vel;
+		slot.Destroy();
+	}
+
+	void TakeInvItem(InventorySlot slot, int flags = 0)
+	{
+		if (!slot || !CanInteractWith() && !(flags & FIF_FORCE))
+		{
+			return;
+		}
+
+		if (!(flags & FIF_FORCE))
+		{
+			switch (CanReach(MaxInventoryDistance))
+			{
+				case 1: ThinkMessage(LinkedPlayer, "$TOOFAR_PLR"); return;
+				case 2: ThinkMessage(LinkedPlayer, "$NOTFACING_PLR"); return;
+			}
+		}
+
+		if (hdf_debug & FDebug_Inventory)
+		{
+			for (int i = 0; i < SlotCount; ++i)
+			{
+				if (Slots[i] == slot)
+				{
+					Console.Printf("[%s, %s], slot %i: %s %s with an amount of %i.", GetTimestamp(), GetTag(), i, flags & FIF_REMOVE ? "removed" : "took", slot.ItemClass.GetClassName(), slot.Amount);
+					break;
+				}
+			}
+		}
+
+		if (flags & FIF_REMOVE)
+		{
+			slot.Destroy();
+			return;
+		}
+
+		if (slot.ItemClass is 'HDMagAmmo')
+		{
+			HDMagAmmo.GiveMag(LinkedPlayer, slot.ItemClass, slot.Amount);
+			slot.Destroy();
+		}
+		else
+		{
+			int diff = GetDefaultByType(slot.ItemClass).MaxAmount - LinkedPlayer.CountInv(slot.ItemClass);
+			int maxAdd = min(diff, slot.Amount);
+			if (maxAdd == 0)
+			{
+				ThinkMessage(LinkedPlayer, "$NOSPACE_PLR");
+				return;
+			}
+			HDF.Give(LinkedPlayer, slot.ItemClass, maxAdd);
+
+			slot.Amount -= maxAdd;
+			if (slot.Amount == 0)
+			{
+				slot.Destroy();
+			}
+		}
+	}
+
+	// --------------------------------------------------
+	// INFORMATION
+	// --------------------------------------------------
+
+	clearscope InventorySlot Find(class<Inventory> cls, int flags = 0)
+	{
+		if (flags & FIF_REVERSEDIRECTION)
+		{
+			for (int i = SlotCount - 1; i >= 0; --i)
+			{
+				if (Slots[i] && Slots[i].ItemClass == cls)
+				{
+					return Slots[i];
+				}
+			}
+		}
+		else
+		{
+			for (int i = 0; i < SlotCount; ++i)
+			{
+				if (Slots[i] && Slots[i].ItemClass == cls)
+				{
+					return Slots[i];
+				}
+			}
+		}
+		return null;
+	}
+
+	clearscope InventorySlot FindHighestAmount(class<Inventory> cls)
+	{
+		int maxFound = 0;
+		InventorySlot slot = null;
+		for (int i = 0; i < SlotCount; ++i)
+		{
+			if (!Slots[i])
+			{
+				continue;
+			}
+
+			// [Ace] HMMMMMM THIS CODE LOOKS FAMILIAR.
+			if (Slots[i].ItemClass == cls)
+			{
+				if (Slots[i].Amount >= maxFound)
+				{
+					maxFound = Slots[i].Amount;
+					slot = Slots[i];
+				}
+			}
+		}
+		return slot;
+	}
+
+	clearscope InventorySlot FindLowestAmount(class<Inventory> cls)
+	{
+		int minFound = int.MAX;
+		InventorySlot slot = null;
+		for (int i = SlotCount - 1; i >= 0; --i)
+		{
+			if (!Slots[i])
+			{
+				continue;
+			}
+
+			if (Slots[i].ItemClass == cls)
+			{
+				if (Slots[i].Amount < minFound)
+				{
+					minFound = Slots[i].Amount;
+					slot = Slots[i];
+				}
+			}
+		}
+		return slot;
+	}
+
+	clearscope int GetAmount(class<Inventory> cls)
+	{
+		int Total = 0;
+		for (int i = 0; i < SlotCount; ++i)
+		{
+			if (Slots[i] && Slots[i].ItemClass == cls)
+			{
+				Total += Slots[i].Amount;
+			}
+		}
+		return Total;
+	}
+
+	clearscope int GetFirstEmptySlotIndex(int startIndex)
+	{
+		for (int i = startIndex; i < SlotCount; ++i)
+		{
+			if (!Slots[i])
+			{
+				return i;
+			}
+		}
+		return -1;
+	}
+
+	clearscope int GetLastEmptySlotIndex(int startIndex)
+	{
+		for (int i = startIndex; i >= 0; --i)
+		{
+			if (!Slots[i])
+			{
+				return i;
+			}
+		}
+		return -1;
+	}
+
+	clearscope int GetPartialItemIndex(class<Inventory> cls, int startIndex = 0, int maxAmt = MaxLooseAmmoAmount)
+	{
+		for (int i = startIndex; i < SlotCount; ++i)
+		{
+			if (Slots[i] && Slots[i].ItemClass == cls && Slots[i].Amount < maxAmt)
+			{
+				return i;
+			}
+		}
+		return -1;
+	}
+
+
+	// --------------------------------------------------
+	// CONSTANTS/VARIABLES
+	// --------------------------------------------------
+
+	const SlotCount = 30;
+	const MaxInventoryDistance = HDCONST_ONEMETRE * 1.25;
+	const MaxLooseAmmoAmount = 30;
+	InventorySlot Slots[SlotCount];
+}

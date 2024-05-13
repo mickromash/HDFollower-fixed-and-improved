@@ -1,0 +1,38 @@
+class FollowerValnos : HDFollower
+{
+	override void GiveStartingItems(string input)
+	{
+		Super.GiveStartingItems(hdf_loadout_valnos);
+	}
+
+	Default
+	{
+		SeeSound "Follower/Valnos/See";
+		PainSound "Follower/Valnos/Pain";
+		DeathSound "Follower/Valnos/Death";
+		Tag "$TAG_VALNOS";
+		HDFollower.UnLocalizeTag "Valnos";
+		+HDFOLLOWER.SILENT
+		HDFollower.FollowerInfo GENDER_MALE, 'FollowerBodyValnos', 'LeftBehindValnos';
+		HDFollower.ResurrectType RESF_BLUES | RESF_MERCHANT;
+		Scale 1;
+	}
+
+	States
+	{
+		Spawn:
+			FLW3 A 0;
+			Goto Super::Spawn;
+	}
+}
+
+class LeftBehindValnos : LeftBehindFollower {}
+
+class FollowerBodyValnos : FollowerBody
+{
+	Default
+	{
+		Inventory.Icon "FOLLC0";
+		Tag "$TAG_VALNOS";
+	}
+}

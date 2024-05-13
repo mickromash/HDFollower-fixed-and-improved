@@ -1,0 +1,115 @@
+extend class HDFollower
+{
+	enum FOrder
+	{
+		FOrder_Follow,
+		FOrder_Stay,
+		FOrder_GoThere,
+		FOrder_ComeAndHelp,
+		FOrder_HealSelf
+	}
+
+	enum ChangeOrderFlags
+	{
+		COF_MULTI = 1
+	}
+
+	// --------------------------------------------------
+	// ACTIONS
+	// --------------------------------------------------
+
+	private void HaulAss()
+	{
+		ClearTarget();
+		IdleWeapon(IWF_KEEPRELOADING);
+		SetStateLabel('Idle'); // [Ace] Surely putting this here can't backfire. Right? :uhh:
+	}
+
+	bool ChangeOrders(FOrder newOrder, int flags = 0)
+	{
+		if (Status == FStatus_InactiveOrDead)
+		{
+			return false;
+		}
+		
+		Status = FStatus_None;
+
+		int index = Order == newOrder ? 1 : 2; // [Ace] 1 - already on it, 2 - new order.
+		switch (newOrder)
+		{
+			case FOrder_Follow:
+			{
+				PrintMessage(GetResponse("ORDER_FOLLOW"..index), "Order/Follow"..index, PMType_General);
+				Order = newOrder;
+				return true;
+			}
+			case FOrder_Stay:
+			{
+				PrintMessage(GetResponse("ORDER_STAY"..index), "Order/Stay"..index, PMType_General);
+				Order = newOrder;
+				ClearGoal();
+				return true;
+			}
+			case FOrder_GoThere:
+			{
+				FLineTraceData TraceData;
+				LinkedPlayer.LineTrace(LinkedPlayer.angle, MaxGoalRange * 2, LinkedPlayer.pitch, TRF_THRUACTORS, LinkedPlayer.Height - 8, data: TraceData);
+				if ((TraceData.HitType == TraceData.TRACE_HitFloor || TraceData.HitType == TraceData.TRACE_HitWall) && TrySetGoal(TraceData.HitLocation, SGF_IGNOREVALID | (flags & COF_MULTI ? SGF_MULTI : 0)))
+				{
+					// [Ace] Drop whatever they're doing and haul ass to their destination.
+					HaulAss();
+					Order = newOrder;
+					ActivateAsPlayer = true;
+					PrintMessage(GetResponse("ORDER_GOTHERE2"), "Order/GoThere2", PMType_General);
+					return true;
+				}
+				else
+				{
+					PrintMessage(GetResponse("ORDER_GOTHERE1"), "Order/GoThere1", PMType_Important);
+					return false;
+				}
+			}
+			case FOrder_ComeAndHelp:
+			{
+				if (!PNeedsMedic && !PNeedsHelp)
+				{
+					PrintMessage(GetResponse("ORDER_HELP3"), "Order/Help3", PMType_Important);
+					return true;
+				}
+				PrintMessage(GetResponse("ORDER_HELP"..index), "Order/Help"..index, PMType_Important);
+				HaulAss();
+
+				if (Order != newOrder)
+				{
+					PrevOrder = Order;
+				}
+				Order = newOrder;
+				return true;
+			}
+			case FOrder_HealSelf:
+			{
+				if (GetAmount('PortableMedikit') == 0 && SuturesLeft == 0)
+				{
+					PrintMessage(GetResponse("ORDER_HEAL_NOSUPPLIES"), "Order/Heal/NoSupplies", PMType_Important);
+					return true;
+				}
+				if (!CanHealSelf())
+				{
+					PrintMessage(GetResponse("ORDER_HEAL_NONEED"), "Order/Heal/NoNeed", PMType_Important);
+					return true;
+				}
+
+				PrintMessage(GetResponse("ORDER_HEAL"..index), "Order/Heal"..index, PMType_Important);
+
+				if (Order != newOrder)
+				{
+					PrevOrder = Order;
+				}
+				Order = newOrder;
+				return true;
+			}
+		}
+
+		return false;
+	}
+}

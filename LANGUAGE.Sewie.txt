@@ -1,0 +1,243 @@
+[enu default]
+
+TAG_SEWIE = "Sewie";
+
+SEWIE_ORDER_FOLLOW1_1 = "I'm already following you.";
+SEWIE_ORDER_FOLLOW1_2 = "Right behind you.";
+SEWIE_ORDER_FOLLOW1_3 = "I'm already sticking close.";
+
+SEWIE_ORDER_FOLLOW2_1 = "Roger that, I'll stick close.";
+SEWIE_ORDER_FOLLOW2_2 = "Following the leader!";
+SEWIE_ORDER_FOLLOW2_3 = "Lead the way.";
+
+SEWIE_ORDER_STAY1_1 = "I'm already idling here.";
+SEWIE_ORDER_STAY1_2 = "I've been standing here for some time now.";
+SEWIE_ORDER_STAY1_3 = "You don't have to repeat yourself, y'know.";
+
+SEWIE_ORDER_STAY2_1 = "I'll stay right here, then.";
+SEWIE_ORDER_STAY2_2 = "Sure!";
+SEWIE_ORDER_STAY2_3 = "Fine by me. Don't take too long, though, okay?";
+
+SEWIE_ORDER_GOTHERE1_1 = "I can't go there.";
+SEWIE_ORDER_GOTHERE1_2 = "Sorry, I can't reach that.";
+SEWIE_ORDER_GOTHERE1_3 = "No can do.";
+
+SEWIE_ORDER_GOTHERE2_1 = "On my way!";
+SEWIE_ORDER_GOTHERE2_2 = "Whatever you say.";
+SEWIE_ORDER_GOTHERE2_3 = "Going!";
+
+SEWIE_ORDER_HELP1_1 = "I'm already coming.";
+SEWIE_ORDER_HELP1_2 = "I know, just hold on.";
+SEWIE_ORDER_HELP1_3 = "Just a little longer.";
+
+SEWIE_ORDER_HELP2_1 = "I'm coming.";
+SEWIE_ORDER_HELP2_2 = "I'll be right there!";
+SEWIE_ORDER_HELP2_3 = "Put pressure on that wound.";
+
+SEWIE_ORDER_HELP3_1 = "I don't see anything wrong.";
+SEWIE_ORDER_HELP3_2 = "Are you sure you need help?";
+SEWIE_ORDER_HELP3_3 = "If you want me to come, there are easier ways to do that.";
+
+SEWIE_ORDER_HEAL_NOSUPPLIES_1 = "I'm all out of supplies.";
+SEWIE_ORDER_HEAL_NOSUPPLIES_2 = "Would you mind tossing me a medikit?";
+SEWIE_ORDER_HEAL_NOSUPPLIES_3 = "Oops! Looks like I'm all out of staples!";
+
+SEWIE_ORDER_HEAL_NONEED_1 = "Thanks, sweetheart, but I feel just fine.";
+SEWIE_ORDER_HEAL_NONEED_2 = "I feel A-OK!";
+SEWIE_ORDER_HEAL_NONEED_3 = "B-but I'm not even hurt!";
+
+SEWIE_ORDER_HEAL1_1 = "Working on it.";
+SEWIE_ORDER_HEAL1_2 = "I could do it faster if you give me a hand.";
+SEWIE_ORDER_HEAL1_3 = "I'm stapling as fast as I can. It really hurts!";
+
+SEWIE_ORDER_HEAL2_1 = "Ouchie!";
+SEWIE_ORDER_HEAL2_2 = "This feels just like sewing clothes! Oof.";
+SEWIE_ORDER_HEAL2_3 = "Oh boy, this is going to hurt.";
+
+SEWIE_STANCE_AGGRESSIVE1_1 = "I'm already covering your back.";
+SEWIE_STANCE_AGGRESSIVE1_2 = "Already on it.";
+SEWIE_STANCE_AGGRESSIVE1_3 = "Stop worrying, nobody is going to shoot you."; // [Ace] And then you get shot.
+
+SEWIE_STANCE_AGGRESSIVE2_1 = "Don't worry, I got your six.";
+SEWIE_STANCE_AGGRESSIVE2_2 = "Your back is safe.";
+SEWIE_STANCE_AGGRESSIVE2_3 = "I'll stay here and guard you.";
+
+SEWIE_STANCE_PASSIVE1_1 = "I'm already ignoring hostiles.";
+SEWIE_STANCE_PASSIVE1_2 = "I'm already paying no attention to the baddies.";
+SEWIE_STANCE_PASSIVE1_3 = "Don't have to tell me twice.";
+
+SEWIE_STANCE_PASSIVE2_1 = "Doing a tactical retreat, are we?";
+SEWIE_STANCE_PASSIVE2_2 = "Let's run!";
+SEWIE_STANCE_PASSIVE2_3 = "Yeah, we should probably get the hell outta here.";
+
+SEWIE_CARRY_SUCCESS_1 = "Be gentle, okay?";
+SEWIE_CARRY_SUCCESS_2 = "Wheeeee!";
+SEWIE_CARRY_SUCCESS_3 = "This is fun!";
+
+SEWIE_NOAMMO_SMG_1 = "My SMG is complaining.";
+SEWIE_NOAMMO_SMG_2 = "My SMG demands more candy.";
+SEWIE_NOAMMO_SMG_3 = "Got more nine mil?";
+
+SEWIE_NOAMMO_HUNTER_1 = "Hunter can no longer hunt.";
+SEWIE_NOAMMO_HUNTER_2 = "Spare some shells?";
+SEWIE_NOAMMO_HUNTER_3 = "Oh no, I'm out of shells.";
+
+SEWIE_NOAMMO_ZM66_1 = "I'm out of ammo. Spare some 4mm mags?";
+SEWIE_NOAMMO_ZM66_2 = "Out of four mil. Got any?";
+SEWIE_NOAMMO_ZM66_3 = "ZM is dry, need a refill.";
+
+SEWIE_NOAMMO_RL_1 = "Just launched my last rocket grenade.";
+SEWIE_NOAMMO_RL_2 = "I'll need more rocket grenades, hon.";
+SEWIE_NOAMMO_RL_3 = "Got more boom-booms?";
+
+SEWIE_NOAMMO_LIBERATOR_1 = "My libby has libbed its last.";
+SEWIE_NOAMMO_LIBERATOR_2 = "I'll need some mags for my Liberator.";
+SEWIE_NOAMMO_LIBERATOR_3 = "Hey, do you happen to have any liberator mags?";
+
+SEWIE_NOAMMO_BOSS_1 = "There goes my last liberator mag. I hope you have any left.";
+SEWIE_NOAMMO_BOSS_2 = "So much for the Boss. I'm out.";
+SEWIE_NOAMMO_BOSS_3 = "Spare any clips?";
+
+SEWIE_NOAMMO_BRONTO_1 = "That was the last bolt. Got any on you?";
+SEWIE_NOAMMO_BRONTO_2 = "I'm out of bronto bolts.";
+SEWIE_NOAMMO_BRONTO_3 = "I don't have anything to take care of big baddies anymore.";
+
+SEWIE_MEDIC_STIMMED_1 = "Here, this will make the pain more bearable.";
+SEWIE_MEDIC_STIMMED_2 = "This should ease your suffering.";
+SEWIE_MEDIC_STIMMED_3 = "Hold still while I stim you.";
+
+SEWIE_REVIVE_BLUES_SUCCESS_1 = "Huh? What happened? How long have I been gone for?";
+SEWIE_REVIVE_BLUES_SUCCESS_2 = "I don't recall anything. Did I pass out?";
+SEWIE_REVIVE_BLUES_SUCCESS_3 = "Ow, my head hurts.";
+
+SEWIE_REVIVE_BLOOD_SUCCESS_1 = "Mmm, delicious. Thanks!";
+SEWIE_REVIVE_BLOOD_SUCCESS_2 = "Uhm... You're bleeding.";
+SEWIE_REVIVE_BLOOD_SUCCESS_3 = "You taste funny. Have you been using blood bags lately?";
+
+SEWIE_REVIVE_MERCHANT_SUCCESS_1 = "I really hope I didn't get touched in inappropriate places.";
+SEWIE_REVIVE_MERCHANT_SUCCESS_2 = "These days even traders are surgeons. Or are they necromancers?";
+SEWIE_REVIVE_MERCHANT_SUCCESS_3 = "Aaaaaah! Spooky merchant!";
+
+SEWIE_ARMORGIVE_INIT_1 = "Oh, you have something for me? I'll wait for you to drop it.";
+SEWIE_ARMORGIVE_INIT_2 = "Sure, just drop it here.";
+SEWIE_ARMORGIVE_INIT_3 = "Gimme gimme!";
+
+SEWIE_ARMORGIVE_CANCEL_1 = "I see you've changed your mind.";
+SEWIE_ARMORGIVE_CANCEL_2 = "Alright then.";
+SEWIE_ARMORGIVE_CANCEL_3 = "Suit yourself.";
+
+SEWIE_ARMORGIVE_STRIP_1 = "Stop hogging all the armor.";
+SEWIE_ARMORGIVE_STRIP_2 = "I feel so naked.";
+SEWIE_ARMORGIVE_STRIP_3 = "I'll miss that.";
+
+SEWIE_ARMORGIVE_NONE_1 = "Looks sturdy. Thank you.";
+SEWIE_ARMORGIVE_NONE_2 = "Cool armor. Thanks!";
+SEWIE_ARMORGIVE_NONE_3 = "I like protection.";
+
+SEWIE_ARMORGIVE_UPGRADE_1 = "I needed that upgrade. Thank you.";
+SEWIE_ARMORGIVE_UPGRADE_2 = "Wonderful!";
+SEWIE_ARMORGIVE_UPGRADE_3 = "Awesome.";
+
+SEWIE_ARMORGIVE_BETTERDURABILITY_1 = "Thanks, this will last much longer than my old armor.";
+SEWIE_ARMORGIVE_BETTERDURABILITY_2 = "Much better!";
+SEWIE_ARMORGIVE_BETTERDURABILITY_3 = "This gives me a much better sense of security. Thanks.";
+
+SEWIE_ARMORGIVE_NOTHANKS_1 = "My current armor is better. You can keep that one.";
+SEWIE_ARMORGIVE_NOTHANKS_2 = "I don't like that one, it's dented.";
+SEWIE_ARMORGIVE_NOTHANKS_3 = "I like my armor.";
+
+SEWIE_ARMORGIVE_RANAWAY_1 = "Doesn't look like you're planning to give me anything.";
+SEWIE_ARMORGIVE_RANAWAY_2 = "Hey, where are you going!?";
+SEWIE_ARMORGIVE_RANAWAY_3 = "Wait up!";
+
+SEWIE_RADSUITGIVE_INIT_1 = "Oh, okay.";
+SEWIE_RADSUITGIVE_INIT_2 = "Yay!";
+SEWIE_RADSUITGIVE_INIT_3 = "Extra protection is always good.";
+
+SEWIE_RADSUITGIVE_CANCEL_1 = "Oh.";
+SEWIE_RADSUITGIVE_CANCEL_2 = "Alrighty, then!";
+SEWIE_RADSUITGIVE_CANCEL_3 = "Okie dokie.";
+
+SEWIE_RADSUITGIVE_STRIP_1 = "Aw.";
+SEWIE_RADSUITGIVE_STRIP_2 = "I just got comfy in there.";
+SEWIE_RADSUITGIVE_STRIP_3 = "Please don't let me get hit by fireballs.";
+
+SEWIE_RADSUITGIVE_NONE_1 = "Thank you!";
+SEWIE_RADSUITGIVE_NONE_2 = "It smells kind of funny.";
+SEWIE_RADSUITGIVE_NONE_3 = "Are you sure this will protect me?";
+
+SEWIE_RADSUITGIVE_NOTHANKS_1 = "I already have one.";
+SEWIE_RADSUITGIVE_NOTHANKS_2 = "I'm already comfy in mine.";
+SEWIE_RADSUITGIVE_NOTHANKS_3 = "Nah.";
+
+SEWIE_RADSUITGIVE_RANAWAY_1 = "But why?";
+SEWIE_RADSUITGIVE_RANAWAY_2 = "Oh...";
+SEWIE_RADSUITGIVE_RANAWAY_3 = "I'm sad.";
+
+SEWIE_BACKPACKGIVE_INIT_1 = "Your burdens are mine to bear, I guess.";
+SEWIE_BACKPACKGIVE_INIT_2 = "My back is scared.";
+SEWIE_BACKPACKGIVE_INIT_3 = "I'm going to need a massage after this.";
+
+SEWIE_BACKPACKGIVE_CANCEL_1 = "Okie dokie.";
+SEWIE_BACKPACKGIVE_CANCEL_2 = "Fine by me!";
+SEWIE_BACKPACKGIVE_CANCEL_3 = "Sure thing.";
+
+SEWIE_BACKPACKGIVE_STRIP_1 = "Ouch, my back.";
+SEWIE_BACKPACKGIVE_STRIP_2 = "That was heavy.";
+SEWIE_BACKPACKGIVE_STRIP_3 = "Please don't make me do that again.";
+
+SEWIE_BACKPACKGIVE_NONE_1 = "That IS heavy.";
+SEWIE_BACKPACKGIVE_NONE_2 = "Oof.";
+SEWIE_BACKPACKGIVE_NONE_3 = "I might need help with this.";
+
+SEWIE_BACKPACKGIVE_NOTHANKS_1 = "I can't carry two!";
+SEWIE_BACKPACKGIVE_NOTHANKS_2 = "These are too heavy for me to carry two of them!";
+SEWIE_BACKPACKGIVE_NOTHANKS_3 = "Please, I can't carry any more.";
+
+SEWIE_BACKPACKGIVE_RANAWAY_1 = "I see you've changed your mind.";
+SEWIE_BACKPACKGIVE_RANAWAY_2 = "I don't mind that.";
+SEWIE_BACKPACKGIVE_RANAWAY_3 = "Looks like I got off easy!";
+
+SEWIE_PSGGIVE_INIT_1 = "Wow!";
+SEWIE_PSGGIVE_INIT_2 = "I'd love to have one!";
+SEWIE_PSGGIVE_INIT_3 = "Please give me one!";
+
+SEWIE_PSGGIVE_CANCEL_1 = "Aw, shucks...";
+SEWIE_PSGGIVE_CANCEL_2 = "You make me sad.";
+SEWIE_PSGGIVE_CANCEL_3 = "Darn.";
+
+SEWIE_PSGGIVE_STRIP_1 = "I'll miss it.";
+SEWIE_PSGGIVE_STRIP_2 = "Can I get a new one at some point?";
+SEWIE_PSGGIVE_STRIP_3 = "Hey, I'm not ready to part with it yet.";
+
+SEWIE_PSGGIVE_NONE_1 = "Incredible!";
+SEWIE_PSGGIVE_NONE_2 = "I feel so safe!";
+SEWIE_PSGGIVE_NONE_3 = "Thank you so much!";
+
+SEWIE_PSGGIVE_NOTHANKS_1 = "I'm afraid I can only carry one.";
+SEWIE_PSGGIVE_NOTHANKS_2 = "That won't work.";
+SEWIE_PSGGIVE_NOTHANKS_3 = "Nope.";
+
+SEWIE_PSGGIVE_RANAWAY_1 = "Hey, wait a minute!";
+SEWIE_PSGGIVE_RANAWAY_2 = "Come back!";
+SEWIE_PSGGIVE_RANAWAY_3 = "Aw...";
+
+SEWIE_WEAPONGIVE_INIT_1 = "Oh? A gun? For me? How nice of you.";
+SEWIE_WEAPONGIVE_INIT_2 = "Oh goody!";
+SEWIE_WEAPONGIVE_INIT_3 = "Mmmmm.";
+
+SEWIE_WEAPONGIVE_CANCEL_1 = "Aw. Okay then.";
+SEWIE_WEAPONGIVE_CANCEL_2 = "I'm sad, but it'll pass.";
+SEWIE_WEAPONGIVE_CANCEL_3 = "Alrighty then.";
+
+SEWIE_WEAPONGIVE_NONE_1 = "Oh, wow! Thank you!";
+SEWIE_WEAPONGIVE_NONE_2 = "I love it!";
+SEWIE_WEAPONGIVE_NONE_3 = "It's so shiny!";
+
+SEWIE_WEAPONGIVE_NOTHANKS_1 = "Thanks, I'll pass.";
+SEWIE_WEAPONGIVE_NOTHANKS_2 = "Unfortunately, I cannot use this.";
+SEWIE_WEAPONGIVE_NOTHANKS_3 = "Sorry, I'm unable to use this.";
+
+SEWIE_WEAPONGIVE_RANAWAY_1 = "Hey, come back!";
+SEWIE_WEAPONGIVE_RANAWAY_2 = "Why do you do this to me?";
+SEWIE_WEAPONGIVE_RANAWAY_3 = "Aw.";

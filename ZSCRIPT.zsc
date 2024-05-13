@@ -1,0 +1,332 @@
+version "4.6"
+
+#include "ZScript/FollowerWeapon.zsc"
+#include "ZScript/FollowerHandler.zsc"
+#include "ZScript/CommandMenu.zsc"
+#include "ZScript/Inventory.zsc"
+#include "ZScript/Management.zsc"
+#include "ZScript/Ohana.zsc"
+#include "ZScript/Recruitment.zsc"
+#include "ZScript/Data.zsc"
+#include "ZScript/GeneralStates.zsc"
+#include "ZScript/Resurrection.zsc"
+#include "ZScript/Wearables.zsc"
+#include "ZScript/Medical.zsc"
+#include "ZScript/Weapons.zsc"
+#include "ZScript/AI.zsc"
+#include "ZScript/Goals.zsc"
+#include "ZScript/Orders.zsc"
+#include "ZScript/Stance.zsc"
+#include "ZScript/Targeting.zsc"
+#include "ZScript/Brass.zsc"
+#include "ZScript/Loadout.zsc"
+#include "ZScript/Messages.zsc"
+
+#include "ZScript/Followers/Freylis.zsc"
+#include "ZScript/Followers/Balthazar.zsc"
+#include "ZScript/Followers/Valnos.zsc"
+#include "ZScript/Followers/Daina.zsc"
+#include "ZScript/Followers/Sewie.zsc"
+#include "ZScript/Followers/Nari.zsc"
+
+// [Ace] Needs to be last or else it messes with the Enabled check in the creation loop in FollowerHandler::WorldLoaded().
+#include "ZScript/Followers/RecruitedMarine.zsc"
+
+class HDFollower : HDHumanoid abstract
+{
+	enum FollowerDebugLevel
+	{
+		FDebug_Weapons = 1,
+		FDebug_Reloading = 2,
+		FDebug_Aiming = 4,
+		FDebug_Targeting = 8,
+		FDebug_Inventory = 16,
+		FDebug_Status = 32,
+		FDebug_Ohana = 64,
+	}
+
+	// --------------------------------------------------
+	// VIRTUALS
+	// --------------------------------------------------
+		
+	override void Die(Actor source, Actor inflictor, int dmgflags, Name mod)
+	{
+		OhanaTicker = 0;
+		Super.Die(source, inflictor, dmgflags, mod);
+	}
+
+	// --------------------------------------------------
+	// ACTIONS
+	// --------------------------------------------------
+
+	void ChangeLinkedPlayer(HDPlayerPawn plr)
+	{
+		LinkedPlayer = plr;
+		master = plr; // [Ace] War Trophies compatibility.
+	}
+
+	void WarpToPlayer()
+	{
+		Warp(LinkedPlayer, 16, flags: WARPF_NOCHECKPOSITION);
+	}
+
+	// --------------------------------------------------
+	// INFORMATION
+	// --------------------------------------------------
+
+	private HDBleedingWound GetBleedThinker()
+	{
+		ThinkerIterator it = ThinkerIterator.Create("HDBleedingWound", STAT_DEFAULT);
+		HDBleedingWound BleedThinker;
+		while ((BleedThinker = HDBleedingWound(it.Next())))
+		{
+			if (BleedThinker.bleeder == self)
+			{
+				return BleedThinker;
+			}
+		}
+		return BleedThinker;
+	}
+
+	clearscope bool CanInteractWith(bool validIfDead = true)
+	{
+		return Health > 0 && bFRIENDLY || Health <= 0 && validIfDead;
+	}
+
+	// [Ace] Probably a bit counter-intuitive to return 0 for success.
+	clearscope int CanReach(double dist, bool ignoreAngle = false)
+	{
+		if (DistanceToPlayer > radius + dist)
+		{
+			return 1;
+		}
+		if (!IsFacedByPlayer() && !ignoreAngle)
+		{
+			return 2;
+		}
+		return 0;
+	}
+
+	// [Ace] These are relative to the follower. 0 means facing/moving directly towards the follower. 
+	clearscope double GetPlayerFacingAngle()
+	{
+		double PAngle = LinkedPlayer.angle;
+		double PAngleTo = LinkedPlayer.AngleTo(self);
+		return AbsAngle(PAngle, PAngleTo);
+	}
+
+	clearscope double GetPlayerMovementAngle()
+	{
+		double pMovAngle = VectorAngle(LinkedPlayer.vel.x, LinkedPlayer.vel.y);
+		double pAngTo = LinkedPlayer.AngleTo(self);
+		return AbsAngle(pMovAngle, pAngTo);
+	}
+
+	override string GetObituary(Actor victim, Actor inflictor, Name mod, bool playerattack)
+	{
+		return String.Format("$FLW_OBTFRIENDLY", HDPlayerPawn(victim).player.GetUserName(), inflictor.target ? HDFollower(inflictor.target).GetTag() : inflictor.GetTag());
+	}
+
+	clearscope string GetPronoun(bool upper)
+	{
+		// [Ace] Personal pronouns, objective case, third person singular.
+		switch (Gender)
+		{
+			case GENDER_MALE: return upper ? StringTable.Localize("$FLW_HIMU") : StringTable.Localize("$FLW_HIM");
+			case GENDER_FEMALE: return upper ? StringTable.Localize("$FLW_HERU") : StringTable.Localize("$FLW_HER");
+			case GENDER_NEUTRAL: return upper ? StringTable.Localize("$FLW_ITU") : StringTable.Localize("$FLW_IT");
+			case GENDER_OTHER: return upper ? StringTable.Localize("$FLW_THEMU") : StringTable.Localize("$FLW_THEM");
+		}
+
+		return "??????";
+	}
+
+	clearscope string GetTimestamp()
+	{
+		return String.Format("%s:%02d", level.TimeFormatted(), level.time % 35);
+	}
+
+	clearscope bool IsDeadOrMissing()
+	{
+		if (!LinkedPlayer)
+		{
+			return true;
+		}
+
+		bool FollowerDead = Health <= 0;
+		bool TooFar = Distance3D(LinkedPlayer) > HDCONST_ONEMETRE * 15;
+
+		return TooFar || FollowerDead;
+	}
+
+	clearscope bool IsFacedByPlayer()
+	{
+		return GetPlayerFacingAngle() <= MaxFaceAngle;
+	}
+
+	clearscope bool PlayerIsCrouching()
+	{
+		return LinkedPlayer.player.crouchfactor < 0.6;
+	}
+
+	clearscope bool PlayerIsProne()
+	{
+		return LinkedPlayer.incapacitated > 0 && LinkedPlayer.incaptimer <= 0;
+	}
+
+	// --------------------------------------------------
+	// TICKER
+	// --------------------------------------------------
+
+	override void Tick()
+	{
+		if (IsFrozen())
+		{
+			return;
+		}
+
+		Super.Tick();
+
+		// [Ace] It's possible for LinkedPlayer to become null if the attached player leaves the game. In that case, automatically assign it to the first non-null player.
+		if (!LinkedPlayer)
+		{
+			for (int i = 0; i < MAXPLAYERS; ++i)
+			{
+				if (players[i].mo)
+				{
+					ChangeLinkedPlayer(HDPlayerPawn(players[i].mo));
+					break;
+				}
+			}
+		}
+
+		if (!LinkedPlayer || bFRIENDLY && Health > 0 && LinkedPlayer.Health <= 0) // [Ace] If LinkedPlayer ever goes null, something is horribly wrong.
+		{
+			return;
+		}
+
+		CanSeePlayer = CheckSight(LinkedPlayer, SF_ALL);
+		DistanceToPlayer = Distance3D(LinkedPlayer);
+
+		CheckOhana();
+
+		// [Ace] Only tick timer if idling.
+		if (!Moving)
+		{
+			CommentTimer--;
+		}
+
+		// InventoryThink();
+		if (Health > 0)
+		{
+			if(ReloadCoolDown>0)ReloadCoolDown--;
+			if(MissPlayer>0 && DistanceToPlayer > 500)MissPlayer--;
+			//if(MissPlayer>0)Console.Printf("MissPlr "..MissPlayer);
+			AiThink();
+
+			if (GetAge() % 35 * 2 == 0 && Bloodloss > 0)
+			{
+				Bloodloss--;
+			}
+		}
+	}
+
+	// --------------------------------------------------
+	// INITIALIZATION
+	// --------------------------------------------------
+
+	override void BeginPlay()
+	{
+		Handler = FollowerHandler(EventHandler.Find('FollowerHandler'));
+
+		Super.BeginPlay();
+	}
+
+	override void PostBeginPlay()
+	{
+		ResetCommentTimer();
+
+		// [Ace] Skip HDMobMan's PostBeginPlay because the Resize call in it has A_SetHealth which fucks shit up.
+		HDMobBase.PostBeginPlay();
+
+		// [Ace] I gotta defer setting these until after Super.PostBeginPlay() is called or else picking up the incapped follower and placing them again heals them partially.
+		Bloodloss = NewBloodloss;
+		BodyDamage = NewBodyDamage;
+		Stunned = NewStunned;
+	}
+
+	// --------------------------------------------------
+	// CONSTANTS/VARIABLES	
+	// --------------------------------------------------
+
+	const MaxFaceAngle = 35;
+	const MaxMovementAngle = 50;
+	
+	FollowerHandler Handler;
+
+	protected double MovementSpeed;
+	protected meta double MaxMovementSpeed;
+	property MovementSpeed: MovementSpeed, MaxMovementSpeed;
+
+	meta int ResurrectType;
+	property ResurrectType: ResurrectType;
+
+	uint Squad;
+	uint Index;
+	int Gender;
+	meta class<FollowerBody> DataClass;
+	meta class<LeftBehindFollower> MissingClass; // [Ace] If this is null, assume follower is non-essential. Like marines.
+	property FollowerInfo: Gender, DataClass, MissingClass;
+
+	private int BehaviourFlags;
+	flagdef Silent: BehaviourFlags, 0;
+	flagdef CanDismiss: BehaviourFlags, 1;
+	
+	String UnLocalizeTag;
+	property UnLocalizeTag : UnLocalizeTag;
+	
+	int ReloadCoolDown;
+	property ReloadCoolDown : ReloadCoolDown;
+	int MissPlayer;
+	property MissPlayer : MissPlayer;
+	
+	Default
+	{
+		Health 200;
+		Radius 12;
+		Height 52;
+		HDFollower.MovementSpeed 3, 8;
+		PainChance 192;
+		MaxStepHeight 80;
+		MaxDropOffHeight 192;
+		MaxTargetRange HDCONST_ONEMETRE * 80;
+		ReactionTime 5;
+		HDFollower.ReloadCoolDown 70;
+		HDFollower.MissPlayer 70;
+		+ROLLCENTER
+		+ROLLSPRITE
+		+FRIENDLY
+		+NODAMAGETHRUST
+		+SLIDESONWALLS
+		+NODROPOFF
+		+NOBLOCKMONST
+		+NOTELESTOMP
+		-NOTELEPORT
+		+NOTELEFRAG // [Ace] Because starting levels can telefrag the followers in multiplayer if there isn't enough space.
+		+BLOCKASPLAYER
+		+NOTRIGGER
+		+SEEINVISIBLE
+		+BOSSDEATH
+		+NOFEAR
+		+THRUSPECIES
+		+DONTTRANSLATE
+		-COUNTKILL
+		HDMobBase.DownedFrame 16;
+		HDMobBase.MaxBloodLoss 400;
+		Species 'HDFollower';
+		HDFollower.ResurrectType RESF_ALL;
+		HDFollower.UnLocalizeTag "";
+	}
+}
+
+class LeftBehindFollower : Inventory abstract { Default { +INVENTORY.UNDROPPABLE } }

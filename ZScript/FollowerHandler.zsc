@@ -1,0 +1,208 @@
+class FollowerHandler : EventHandler
+{
+	enum OperationModifiers
+	{
+		OpMod_Shift = 1,
+		OpMod_Ctrl = 2,
+		OpMod_Alt = 4
+	}
+
+	// ----------------------------------------------------------
+	// CORE
+	// ----------------------------------------------------------
+
+	private transient bool CanExitNow;
+	private transient int WarningResetTimer;
+	Array<class<FollowerWeapon> > AllWeapons;
+
+	override void WorldLoaded(WorldEvent e)
+	{
+		if (GameState == GS_TITLELEVEL)
+		{
+			return;
+		}
+
+		let Arbitrator = players[Net_Arbitrator].mo;
+		if (!Arbitrator)
+		{
+			return;
+		}
+
+		for (int i = 0; i < AllClasses.Size(); ++i)
+		{
+			if (AllClasses[i] is 'FollowerWeapon' && !AllClasses[i].IsAbstract())
+			{
+				AllWeapons.Push((class<FollowerWeapon>)(AllClasses[i]));
+			}
+		}
+
+		Array<class<HDFollower> > FollowerClasses;
+		for (int i = 0; i < AllActorClasses.Size(); ++i)
+		{
+			if (AllActorClasses[i] is 'HDFollower' && AllActorClasses[i].GetClassName() != 'HDFollower')
+			{
+				FollowerClasses.Push((class<HDFollower>)(AllActorClasses[i]));
+			}
+		}
+
+		int spawnFlags = hdf_followers;
+		Array<FollowerBody> InvFollowers;
+		FetchFollowersInInventory(InvFollowers);
+		for (int i = 0; i < FollowerClasses.Size(); ++i)
+		{
+			// [Ace] spawnFlags only affects built-in followers.
+			if (spawnFlags & (1 << i) || i > InternalFollowers - 1)
+			{
+				int index = -1;
+				for (int j = 0; j < InvFollowers.Size(); ++j)
+				{
+					if (InvFollowers[j].Data[InvFollowers[j].Data.Size() - 1].FollowerClass == FollowerClasses[i])
+					{
+						index = j;
+						break;
+					}
+				}
+				
+				// [Ace] Only attempt to spawn a follower if they haven't been picked up by any of the other players.
+				if (index == -1)
+				{
+					if (GetDefaultByType(FollowerClasses[i]).MissingClass)
+					{
+						CreateFollower(FollowerClasses[i], Net_Arbitrator, GetUniqueIndex(1));
+					}
+				}
+				else if (CVar.GetCVar('hdf_droponstart', InvFollowers[index].owner.player).GetBool())
+				{
+					for (int j = 0; j < 50 && InvFollowers[index]; ++j)
+					{
+						InvFollowers[index].owner.UseInventory(InvFollowers[index]);
+					}
+					InvFollowers.Delete(index);
+				}
+			}
+		}
+	}
+
+	override void WorldUnloaded(WorldEvent e)
+	{
+		while (Followers.Size() > 0)
+		{
+			HDFollower flw = Followers[0];
+			if (flw.IsDeadOrMissing())
+			{
+				RemoveFollower(flw, true);
+			}
+			else
+			{
+				flw.PackFollower(true);
+			}
+		}
+	}
+
+	override void WorldLinePreActivated(WorldEvent e)
+	{
+		// [Ace] This only prints the warning. Tokens are given when you actually exit the level.
+		if (e.Thing is "PlayerPawn" && (e.ActivatedLine.special == 74 || e.ActivatedLine.special == 243 || e.ActivatedLine.special == 244) && !CanExitNow)
+		{
+			Array<HDFollower> missingFollowers;
+			Array<string> missingNames;
+			for (int i = 0; i < Followers.Size(); ++i)
+			{
+				// [Ace] Ignore expendable followers.
+				if (Followers[i].IsDeadOrMissing() && Followers[i].MissingClass)
+				{
+					missingFollowers.Push(Followers[i]);
+					String FlwTag = Followers[i].GetTag();
+					if(Followers[i].UnLocalizeTag!="")FLWTag = Followers[i].UnLocalizeTag;
+					missingNames.Push(FlwTag);
+				}
+			}
+			
+			int MSize = missingFollowers.Size();
+			if (MSize > 0)
+			{
+				e.Thing.A_Print(StringTable.Localize("$FLW_DONTLEAVE1")..(MSize > 1 ? StringTable.Localize("$FLW_THEM") : missingFollowers[0].GetPronoun(false))..StringTable.Localize("$FLW_DONTLEAVE2"), 4);
+				//e.Thing.A_Print("\c[White]You shouldn't leave "..AceCore.MakeOxfordComma(missingNames).." behind.\c-\n\n\c[White]Activate the exit again within two seconds to exit the level and leave "..(MSize > 1 ? "them" : missingFollowers[0].GetPronoun(false)).." to the monsters.\c-", 4);
+				//for some reason it's not pulling the relavent info from acecorelib for the "MakeOxfordComma" despite it actually being there??? Might just port the class directly into Followers.
+				
+				e.ShouldActivate = false;
+				CanExitNow = true;
+				WarningResetTimer = 70;
+			}	
+		}
+	}
+
+	override void WorldTick()
+	{
+		if (CanExitNow && --WarningResetTimer <= 0)
+		{
+			CanExitNow = false;
+		}
+
+		if (FollowerPage[consoleplayer] > 0 && FollowerMenuLevel[consoleplayer] == FMenu_Closed)
+		{
+			FollowerPage[consoleplayer] = 0;
+		}
+	}
+
+	// ----------------------------------------------------------
+	// ACTIONS
+	// ----------------------------------------------------------
+
+	private void FetchFollowersInInventory(out Array<FollowerBody> arr)
+	{
+		arr.Clear();
+		for (int i = 0; i < MAXPLAYERS; ++i)
+		{
+			let plr = players[i].mo;
+			if (!plr)
+			{
+				continue;
+			}
+
+			Inventory Next = plr.Inv;
+			while (Next)
+			{
+				if (Next is 'FollowerBody')
+				{
+					arr.Push(FollowerBody(Next));
+				}
+				Next = Next.Inv;
+			}
+		}
+	}
+
+	private void FetchFollowerClasses(out Array<class<HDFollower> > arr)
+	{
+		arr.Clear();
+		for (int i = 0; i < AllActorClasses.Size(); ++i)
+		{
+			if (AllActorClasses[i] is 'HDFollower' && !AllActorClasses[i].IsAbstract())
+			{
+				arr.Push((class<HDFollower>)(AllActorClasses[i]));
+			}
+		}
+	}
+
+	// ----------------------------------------------------------
+	// INFORMATION
+	// ----------------------------------------------------------
+
+	int FollowingFollowersCount()
+	{
+		int Total = 0;
+		for (int i = 0; i < Followers.Size(); ++i)
+		{
+			if (!Followers[i])
+			{
+				Followers.Delete(i--);
+				continue;
+			}
+			if (Followers[i].Health > 0 && Followers[i].Order == HDFollower.FOrder_Follow)
+			{
+				Total++;
+			}
+		}
+		return Total;
+	}
+}

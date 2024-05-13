@@ -1,0 +1,35 @@
+class FollowerSewie : HDFollower
+{
+	override void GiveStartingItems(string input)
+	{
+		Super.GiveStartingItems(hdf_loadout_sewie);
+	}
+
+	Default
+	{
+		SeeSound "Follower/Sewie/See";
+		PainSound "Follower/Sewie/Pain";
+		DeathSound "Follower/Sewie/Death";
+		Tag "$TAG_SEWIE";
+		HDFollower.UnLocalizeTag "Sewie";
+		HDFollower.FollowerInfo GENDER_FEMALE, 'FollowerBodySewie', 'LeftBehindSewie';
+	}
+
+	States
+	{
+		Spawn:
+			FLW5 A 0;
+			Goto Super::Spawn;
+	}
+}
+
+class LeftBehindSewie : LeftBehindFollower {}
+
+class FollowerBodySewie : FollowerBody
+{
+	Default
+	{
+		Inventory.Icon "FOLLE0";
+		Tag "$TAG_SEWIE";
+	}
+}

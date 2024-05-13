@@ -1,0 +1,29 @@
+server int hdf_debug = 0;
+
+server bool hdf_collectbrass = true;
+
+server bool hdf_ohana = false;
+
+user float hdf_uiscale = 1.0;
+user color hdf_uicolor = "60 90 c0";
+user bool hdf_enablecomments = true;
+user int hdf_printlevel_chat = 3;
+user int hdf_printlevel_voice = 3;
+
+server bool hdf_targetuncountable = true;
+server int hdf_maxrange = 0;
+
+server bool hdf_NoTrigger = true;
+
+user bool hdf_droponstart = true;
+user bool hdf_quickaccess = true;
+user bool hdf_quickselect = false;
+
+server int hdf_followers = 7;
+
+server string hdf_loadout_freylis = "";
+server string hdf_loadout_balthazar = "";
+server string hdf_loadout_valnos = "";
+server string hdf_loadout_daina = "";
+server string hdf_loadout_sewie = "";
+server string hdf_loadout_nari = "";

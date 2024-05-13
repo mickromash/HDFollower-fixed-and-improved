@@ -1,0 +1,113 @@
+extend class HDFollower
+{
+	enum SetGoalFlags
+	{
+		SGF_IGNOREVALID = 1,
+		SGF_MULTI = 2,
+		SGF_MOVEAWAY = 4,
+		SGF_LASTKNOWN = 8
+	}
+
+	// --------------------------------------------------
+	// ACTIONS
+	// --------------------------------------------------
+
+	protected void ClearGoal(bool keepLastPos = false)
+	{
+		if (TGoal is 'TargetGoal')
+		{
+			TGoal.Destroy();
+		}
+		TGoal = null; // [Ace] Just in case it's the player.
+
+		if (!keepLastPos)
+		{
+			LastKnownPos = (0, 0, 0);
+		}
+	}
+
+	protected bool TrySetGoal(vector3 spawnPos, int flags = 0)
+	{
+		Actor tg = Spawn('TargetGoal', spawnPos);
+		tg.Height = Height;
+		if (tg && tg.pos.z - tg.floorz <= MaxStepHeight - 8 && Distance2D(tg) < MaxGoalRange && CheckSight(tg, SF_ALL) && (flags & SGF_IGNOREVALID || tg.TestMobjLocation() && level.IsPointInLevel(spawnPos) && !CheckProximity('HDFollower', 64, 1, CPXF_ANCESTOR)))
+		{
+			if (flags & SGF_MULTI)
+			{
+				int count = tg.CountProximity('TargetGoal', 64);
+				if (count > 0)
+				{
+					tg.SetOrigin((tg.Vec2Angle(radius * 2 * count, random(0, 359)), tg.pos.z), false);
+				}
+			}
+			if (flags & SGF_MOVEAWAY)
+			{
+				tg.bSTANDSTILL = true;
+			}
+			if (flags & SGF_LASTKNOWN)
+			{
+				// [Ace] If last known, move a little further away on the movement vector to prevent followers from stopping right at the edge of a corner.
+				tg.SetOrigin(tg.Vec3Angle(16, AngleTo(tg)), false);
+			}
+			ClearGoal(); // [Ace] Nuke old goal.
+			tg.master = self;
+			TGoal = tg;
+			return true;
+		}
+		else
+		{
+			tg.Destroy();
+			return false;
+		}
+	}
+
+	// --------------------------------------------------
+	// CONSTANTS/VARIABLES
+	// --------------------------------------------------
+
+	const MaxGoalRange = 2048;
+}
+
+class TargetGoal : Actor
+{
+	override void Tick()
+	{
+		if (!master)
+		{
+			Destroy();
+			return;
+		}
+		
+		if (Distance3D(master) > 16 && (master.Prev - master.pos).length() < 2)
+		{
+			if (++DestroyTicker == 25)
+			{
+				Destroy();
+				return;
+			}
+		}
+		else
+		{
+			DestroyTicker = 0;
+		}
+
+		Super.Tick();
+	}
+
+	private int DestroyTicker;
+
+	Default
+	{
+		Radius 12;
+		Height 52;
+		+NOINTERACTION
+		+NOBLOCKMAP
+	}
+
+	States
+	{
+		Spawn:
+			TNT1 A 35 * 15;
+			Stop;
+	}
+}

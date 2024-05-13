@@ -1,0 +1,245 @@
+[enu default]
+
+TAG_FREYLIS = "Freylis";
+
+FREYLIS_ORDER_FOLLOW1_1 = "What, you want me to come even closer?";
+FREYLIS_ORDER_FOLLOW1_2 = "Tell me again and I'll kick you.";
+FREYLIS_ORDER_FOLLOW1_3 = "In case you haven't noticed, I'm right behind you.";
+
+FREYLIS_ORDER_FOLLOW2_1 = "Sure, whatever you say.";
+FREYLIS_ORDER_FOLLOW2_2 = "Alright.";
+FREYLIS_ORDER_FOLLOW2_3 = "Let's move.";
+
+FREYLIS_ORDER_STAY1_1 = "Shut up, I'm already half bored to death.";
+FREYLIS_ORDER_STAY1_2 = "*groan*";
+FREYLIS_ORDER_STAY1_3 = "You don't have to remind me I'm missing out on the action.";
+
+FREYLIS_ORDER_STAY2_1 = "Alright, I'll stay here. Don't take forever. We ought to stick together.";
+FREYLIS_ORDER_STAY2_2 = "If you hear me mumbling that I miss you, that's just the wind.";
+FREYLIS_ORDER_STAY2_3 = "Fine, but make it quick.";
+FREYLIS_ORDER_STAY2_4 = "I'm going to grow roots here...";
+
+FREYLIS_ORDER_GOTHERE1_1 = "I can't reach that spot.";
+FREYLIS_ORDER_GOTHERE1_2 = "That's not happening.";
+FREYLIS_ORDER_GOTHERE1_3 = "Nope.";
+
+FREYLIS_ORDER_GOTHERE2_1 = "On it.";
+FREYLIS_ORDER_GOTHERE2_2 = "Cover me while I get there.";
+FREYLIS_ORDER_GOTHERE2_3 = "Okay, I'll camp that spot.";
+
+FREYLIS_ORDER_HELP1_1 = "I'm running as fast as I can.";
+FREYLIS_ORDER_HELP1_2 = "Repeating yourself won't teleport me to you.";
+FREYLIS_ORDER_HELP1_3 = "I heard you the first time.";
+
+FREYLIS_ORDER_HELP2_1 = "Hold on tight.";
+FREYLIS_ORDER_HELP2_2 = "Don't you die on me.";
+FREYLIS_ORDER_HELP2_3 = "Try to stay alive, okay?";
+
+FREYLIS_ORDER_HELP3_1 = "You look okay to me.";
+FREYLIS_ORDER_HELP3_2 = "I don't need to do that.";
+FREYLIS_ORDER_HELP3_3 = "You'll be just fine.";
+
+FREYLIS_ORDER_HEAL_NOSUPPLIES_1 = "I don't really have anything to do that with.";
+FREYLIS_ORDER_HEAL_NOSUPPLIES_2 = "That's great and all, but I don't have a medikit.";
+FREYLIS_ORDER_HEAL_NOSUPPLIES_3 = "I would if you give me supplies.";
+
+FREYLIS_ORDER_HEAL_NONEED_1 = "I'm good, but I appreciate the concern.";
+FREYLIS_ORDER_HEAL_NONEED_2 = "Nah. No need.";
+FREYLIS_ORDER_HEAL_NONEED_3 = "I'm feeling well enough. Why waste precious staples?";
+
+FREYLIS_ORDER_HEAL1_1 = "What does it look like I'm doing!?";
+FREYLIS_ORDER_HEAL1_2 = "Shut up.";
+FREYLIS_ORDER_HEAL1_3 = "I'll staple your mouth shut if you don't stop telling me that.";
+
+FREYLIS_ORDER_HEAL2_1 = "This is going to hurt.";
+FREYLIS_ORDER_HEAL2_2 = "Yeah, I think it's time for some stapling.";
+FREYLIS_ORDER_HEAL2_3 = "I'm going to look like just incredible after this...";
+FREYLIS_ORDER_HEAL2_4 = "I really wish vampires didn't feel pain. Ouch.";
+
+FREYLIS_STANCE_AGGRESSIVE1_1 = "I'm already covering you. Or do you need a blanket instead?";
+FREYLIS_STANCE_AGGRESSIVE1_2 = "Look, if I see anything, I'll shoot it.";
+FREYLIS_STANCE_AGGRESSIVE1_3 = "Shut up and keep shooting at the bad guys.";
+
+FREYLIS_STANCE_AGGRESSIVE2_1 = "If you get shot by accident, that wasn't me.";
+FREYLIS_STANCE_AGGRESSIVE2_2 = "I'll cover you.";
+FREYLIS_STANCE_AGGRESSIVE2_3 = "Will keep it simple. I see bad guys, I shoot.";
+
+FREYLIS_STANCE_PASSIVE1_1 = "I'm already pretending to be blind.";
+FREYLIS_STANCE_PASSIVE1_2 = "I know, I know. I got it. I get the concept.";
+FREYLIS_STANCE_PASSIVE1_3 = "Just shut up and let's get out of here.";
+
+FREYLIS_STANCE_PASSIVE2_1 = "Fine, but I'm not shooting if you get dropped.";
+FREYLIS_STANCE_PASSIVE2_2 = "You know what? I agree. Let's bail.";
+FREYLIS_STANCE_PASSIVE2_3 = "I'll conserve ammo, but it's not like it's rare.";
+
+FREYLIS_CARRY_SUCCESS_1 = "I don't like being carried, but if you insist...";
+FREYLIS_CARRY_SUCCESS_2 = "Put me down, damn it!";
+FREYLIS_CARRY_SUCCESS_3 = "I'm not a backpack.";
+
+FREYLIS_NOAMMO_SMG_1 = "Outta nine mil.";
+FREYLIS_NOAMMO_SMG_2 = "SMG is dry.";
+FREYLIS_NOAMMO_SMG_3 = "All out of candy.";
+
+FREYLIS_NOAMMO_HUNTER_1 = "Forget about taking down meaty targets fast.";
+FREYLIS_NOAMMO_HUNTER_2 = "Hunter is dry.";
+FREYLIS_NOAMMO_HUNTER_3 = "Damn, I need more shells.";
+
+FREYLIS_NOAMMO_ZM66_1 = "Never thought I'd actually run out of four mil.";
+FREYLIS_NOAMMO_ZM66_2 = "Shit, my ZM is out.";
+FREYLIS_NOAMMO_ZM66_3 = "If my ZM had a nickname, it'd be 'Empty'.";
+
+FREYLIS_NOAMMO_RL_1 = "You can come out of hiding now, the rocket launcher is dry.";
+FREYLIS_NOAMMO_RL_2 = "Rocket grenades? Never heard of 'em.";
+FREYLIS_NOAMMO_RL_3 = "If you see a box of rockets, it's mine.";
+
+FREYLIS_NOAMMO_LIBERATOR_1 = "Well, Lib's out.";
+FREYLIS_NOAMMO_LIBERATOR_2 = "I'm gonna need more seven mil for my Lib over here.";
+FREYLIS_NOAMMO_LIBERATOR_3 = "Got any seven mil left on you? My Lib is hungry.";
+
+FREYLIS_NOAMMO_BOSS_1 = "If you see anything with shields, run. I'm out of seven mil.";
+FREYLIS_NOAMMO_BOSS_2 = "I hope you have any seven mil, because I'm all out.";
+FREYLIS_NOAMMO_BOSS_3 = "Hey, spare some seven mil?";
+
+FREYLIS_NOAMMO_BRONTO_1 = "So much for the tank cannon shells.";
+FREYLIS_NOAMMO_BRONTO_2 = "There goes the last bolt.";
+FREYLIS_NOAMMO_BRONTO_3 = "Do you hear that? It's the sound of no more bronto bolts.";
+
+FREYLIS_MEDIC_STIMMED_1 = "Hey, sweetheart, time to get up.";
+FREYLIS_MEDIC_STIMMED_2 = "Come on, you lazy bastard. Let's get you back into the fight.";
+FREYLIS_MEDIC_STIMMED_3 = "It's time to stop lying down on the job. This might help with that.";
+
+FREYLIS_REVIVE_BLUES_SUCCESS_1 = "What happened? Did you get them?";
+FREYLIS_REVIVE_BLUES_SUCCESS_2 = "Was I out cold? Damn! I shouldn't have let my guard down.";
+FREYLIS_REVIVE_BLUES_SUCCESS_3 = "Please don't tell me I was dead.";
+
+FREYLIS_REVIVE_BLOOD_SUCCESS_1 = "I wish I could have more, but this will suffice. Now staple yourself, you fool.";
+FREYLIS_REVIVE_BLOOD_SUCCESS_2 = "Thank you. This was rejuvenating.";
+FREYLIS_REVIVE_BLOOD_SUCCESS_3 = "We should do this again sometime.";
+
+FREYLIS_REVIVE_MERCHANT_SUCCESS_1 = "I don't appreciate being touched by strangers, but I am nonetheless thankful for the healing.";
+FREYLIS_REVIVE_MERCHANT_SUCCESS_2 = "Thank you for bringing me to this trader.";
+FREYLIS_REVIVE_MERCHANT_SUCCESS_3 = "It feels good to be back.";
+
+FREYLIS_ARMORGIVE_INIT_1 = "Free armor? Don't mind if I do.";
+FREYLIS_ARMORGIVE_INIT_2 = "Just put it over here.";
+FREYLIS_ARMORGIVE_INIT_3 = "Would really be appreciated.";
+
+FREYLIS_ARMORGIVE_CANCEL_1 = "Cool, but let me know when you actually want to give me something.";
+FREYLIS_ARMORGIVE_CANCEL_2 = "Ha-ha, very funny.";
+FREYLIS_ARMORGIVE_CANCEL_3 = "Fine, but don't expect me to not get killed.";
+
+FREYLIS_ARMORGIVE_STRIP_1 = "I don't like this, but I hope you have something else in mind.";
+FREYLIS_ARMORGIVE_STRIP_2 = "If I get shot, it'd be entirely your fault.";
+FREYLIS_ARMORGIVE_STRIP_3 = "Alright, fine, take it.";
+
+FREYLIS_ARMORGIVE_NONE_1 = "Feels good to not be so fragile anymore.";
+FREYLIS_ARMORGIVE_NONE_2 = "Oh yeah, now we're talking.";
+FREYLIS_ARMORGIVE_NONE_3 = "Much appreciated.";
+
+FREYLIS_ARMORGIVE_UPGRADE_1 = "Thank you, this one is much better.";
+FREYLIS_ARMORGIVE_UPGRADE_2 = "I really appreciate your concern for my well-being.";
+FREYLIS_ARMORGIVE_UPGRADE_3 = "Great stuff. Thanks.";
+
+FREYLIS_ARMORGIVE_BETTERDURABILITY_1 = "Better than the old one, that's for sure.";
+FREYLIS_ARMORGIVE_BETTERDURABILITY_2 = "Has fewer dents than the old one.";
+FREYLIS_ARMORGIVE_BETTERDURABILITY_3 = "Definitely sturdier than what I have.";
+
+FREYLIS_ARMORGIVE_NOTHANKS_1 = "I think I'll pass on the offer.";
+FREYLIS_ARMORGIVE_NOTHANKS_2 = "Nope. You keep that one.";
+FREYLIS_ARMORGIVE_NOTHANKS_3 = "Something tells me what I have now is much better.";
+
+FREYLIS_ARMORGIVE_RANAWAY_1 = "Are you seriously going to leave me hanging?";
+FREYLIS_ARMORGIVE_RANAWAY_2 = "I don't appreciate being lied to.";
+FREYLIS_ARMORGIVE_RANAWAY_3 = "Damn you! Get back here!";
+
+FREYLIS_RADSUITGIVE_INIT_1 = "I really don't like wearing those, but if you insist...";
+FREYLIS_RADSUITGIVE_INIT_2 = "If I have to...";
+FREYLIS_RADSUITGIVE_INIT_3 = "Fine, but know that I don't like it.";
+
+FREYLIS_RADSUITGIVE_CANCEL_1 = "I have mixed feelings about this.";
+FREYLIS_RADSUITGIVE_CANCEL_2 = "Meh.";
+FREYLIS_RADSUITGIVE_CANCEL_3 = "Fine.";
+
+FREYLIS_RADSUITGIVE_STRIP_1 = "Thank fuck.";
+FREYLIS_RADSUITGIVE_STRIP_2 = "I don't know if the air smells worse inside or outside.";
+FREYLIS_RADSUITGIVE_STRIP_3 = "I really hope there are no cacodemons around.";
+
+FREYLIS_RADSUITGIVE_NONE_1 = "Might as well equip a sheet of paper.";
+FREYLIS_RADSUITGIVE_NONE_2 = "This is going to get shot in 3... 2... 1...";
+FREYLIS_RADSUITGIVE_NONE_3 = "Yeah... Thanks, I guess.";
+
+FREYLIS_RADSUITGIVE_NOTHANKS_1 = "Are you serious?";
+FREYLIS_RADSUITGIVE_NOTHANKS_2 = "You'll have to speak up, I can't hear you from inside this fireproof condom.";
+FREYLIS_RADSUITGIVE_NOTHANKS_3 = "In case you can't tell, I'm already wearing one.";
+
+FREYLIS_RADSUITGIVE_RANAWAY_1 = "Not like I was eager to wear that.";
+FREYLIS_RADSUITGIVE_RANAWAY_2 = "Alright, but when I get zapped to death, it'll be on you.";
+FREYLIS_RADSUITGIVE_RANAWAY_3 = "Yeah, I think I'm okay with this.";
+
+FREYLIS_BACKPACKGIVE_INIT_1 = "Suuuure, like I have nothing better to do than carry your shit.";
+FREYLIS_BACKPACKGIVE_INIT_2 = "Lazy cunt.";
+FREYLIS_BACKPACKGIVE_INIT_3 = "Do I look like a mule to you?";
+
+FREYLIS_BACKPACKGIVE_CANCEL_1 = "Giddy.";
+FREYLIS_BACKPACKGIVE_CANCEL_2 = "I was hoping you'd change your mind.";
+FREYLIS_BACKPACKGIVE_CANCEL_3 = "Nice.";
+
+FREYLIS_BACKPACKGIVE_STRIP_1 = "Thank fuck.";
+FREYLIS_BACKPACKGIVE_STRIP_2 = "Go see a doctor for your hoarding issues.";
+FREYLIS_BACKPACKGIVE_STRIP_3 = "My back is thankful.";
+
+FREYLIS_BACKPACKGIVE_NONE_1 = "I am sworn to carry your burd-- wait, no I'm not.";
+FREYLIS_BACKPACKGIVE_NONE_2 = "Great...";
+FREYLIS_BACKPACKGIVE_NONE_3 = "I love carrying around tons of useless shit.";
+
+FREYLIS_BACKPACKGIVE_NOTHANKS_1 = "Are you fucking kidding me?";
+FREYLIS_BACKPACKGIVE_NOTHANKS_2 = "Fuck off.";
+FREYLIS_BACKPACKGIVE_NOTHANKS_3 = "You carry that yourself.";
+
+FREYLIS_BACKPACKGIVE_RANAWAY_1 = "Somehow, I feel relieved.";
+FREYLIS_BACKPACKGIVE_RANAWAY_2 = "And don't come back!";
+FREYLIS_BACKPACKGIVE_RANAWAY_3 = "Sounds good to me!";
+
+FREYLIS_PSGGIVE_INIT_1 = "Holy shit, for real?";
+FREYLIS_PSGGIVE_INIT_2 = "That would be incredible.";
+FREYLIS_PSGGIVE_INIT_3 = "Awesome.";
+
+FREYLIS_PSGGIVE_CANCEL_1 = "Don't get my hopes up like that.";
+FREYLIS_PSGGIVE_CANCEL_2 = "Wow. That was cruel.";
+FREYLIS_PSGGIVE_CANCEL_3 = "Bummer.";
+
+FREYLIS_PSGGIVE_STRIP_1 = "Sad to part with this.";
+FREYLIS_PSGGIVE_STRIP_2 = "You're going to give it back, right?";
+FREYLIS_PSGGIVE_STRIP_3 = "I hope you're only going to replace the batteries.";
+
+FREYLIS_PSGGIVE_NONE_1 = "I am Death.";
+FREYLIS_PSGGIVE_NONE_2 = "Oh, NOW it's on!";
+FREYLIS_PSGGIVE_NONE_3 = "Where is your god now?";
+
+FREYLIS_PSGGIVE_NOTHANKS_1 = "Sorry, can only carry on one of these.";
+FREYLIS_PSGGIVE_NOTHANKS_2 = "I'm surprised you didn't know generators interfere with each other.";
+FREYLIS_PSGGIVE_NOTHANKS_3 = "No can do.";
+
+FREYLIS_PSGGIVE_RANAWAY_1 = "Get back here with that now!";
+FREYLIS_PSGGIVE_RANAWAY_2 = "Liar! I hate you!";
+FREYLIS_PSGGIVE_RANAWAY_3 = "Why would you do this!?";
+
+FREYLIS_WEAPONGIVE_INIT_1 = "Finally, about time you gave me something to shoot with.";
+FREYLIS_WEAPONGIVE_INIT_2 = "Just drop it over here.";
+FREYLIS_WEAPONGIVE_INIT_3 = "Would really be appreciated.";
+
+FREYLIS_WEAPONGIVE_CANCEL_1 = "Cool, but let me know when you actually want to give me something.";
+FREYLIS_WEAPONGIVE_CANCEL_2 = "Ha-ha, very funny.";
+FREYLIS_WEAPONGIVE_CANCEL_3 = "No, really, give me that so I can shoot you with it.";
+
+FREYLIS_WEAPONGIVE_NONE_1 = "I like it. Thanks.";
+FREYLIS_WEAPONGIVE_NONE_2 = "I still wish for a fully semi-automatic bolt-action rifle.";
+FREYLIS_WEAPONGIVE_NONE_3 = "Much appreciated.";
+
+FREYLIS_WEAPONGIVE_NOTHANKS_1 = "That's of no use to me.";
+FREYLIS_WEAPONGIVE_NOTHANKS_2 = "I don't need that.";
+FREYLIS_WEAPONGIVE_NOTHANKS_3 = "Nope.";
+
+FREYLIS_WEAPONGIVE_RANAWAY_1 = "Are you seriously going to leave me hanging?";
+FREYLIS_WEAPONGIVE_RANAWAY_2 = "I don't appreciate being lied to.";
+FREYLIS_WEAPONGIVE_RANAWAY_3 = "Damn you! Get back here!";

@@ -1,0 +1,262 @@
+extend class HDFollower
+{
+	enum HealSelfFlags
+	{
+		HSF_HEALTH = 1,
+		HSF_BODYDAMAGE = 2,
+		HSF_BLOOD = 3,
+		HSF_ALL = HSF_HEALTH | HSF_BODYDAMAGE | HSF_BLOOD
+	}
+
+	// --------------------------------------------------
+	// ACTIONS
+	// --------------------------------------------------
+
+	protected void StopHealing()
+	{
+		ClearGoal();
+		Status = FStatus_None;
+		Order = PrevOrder;
+		SetStateLabel('Idle');
+	}
+
+	protected void HealSelf(int amt, int flags = HSF_ALL)
+	{
+		if (flags & HSF_HEALTH)
+		{
+			GiveBody(amt);
+		}
+		if (flags & HSF_BODYDAMAGE)
+		{
+			BodyDamage = max(0, BodyDamage - amt);
+		}
+		if (flags & HSF_BLOOD)
+		{
+			Bloodloss = max(0, Bloodloss - amt);
+		}
+	}
+
+	protected void PatchPlayerWounds(int amt)
+	{
+		LinkedPlayer.oldwoundcount = max(0, LinkedPlayer.oldwoundcount - amt);
+		LinkedPlayer.aggravateddamage = max(0, LinkedPlayer.aggravateddamage - amt);
+		LinkedPlayer.oldwoundcount += amt;
+		LinkedPlayer.burncount = max(0, LinkedPlayer.burncount - amt * 2);
+	}
+
+	protected bool TryUnwrapMedikit()
+	{
+		if (GetAmount('PortableMedikit') > 0)
+		{
+			//let stim = HDMagAmmo(GiveInventoryType('PortableStimpack'));
+			//stim.SyncAmount();
+			//if (!AddMag(stim, flags: FIF_FORCE))
+			//{
+			Inventory spawned = Inventory(Spawn('PortableStimpack', pos));
+			spawned.Amount = 1;
+			if (!AddItem(spawned, 1, flags: FIF_FORCE))
+			{
+				spawned.Destroy();
+				A_DropInventory('PortableStimpack');
+			}
+			
+			//}
+			A_DropItem('SecondBlood');
+			TakeInvItem(Find('PortableMedikit'), FIF_FORCE | FIF_REMOVE);
+			SuturesLeft = MaxSutures;
+			return true;
+		}
+		return false;
+	}
+
+	// --------------------------------------------------
+	// INFORMATION
+	// --------------------------------------------------
+
+	clearscope bool CanApplyStim()
+	{
+		return LinkedPlayer && LinkedPlayer.CountInv('HDStim') <= HDStim.HDSTIM_MAX - HDStim.HDSTIM_DOSE && GetAmount('PortableStimpack') > 0 && LinkedPlayer.CountInv('HealingMagic') <= 15 && LinkedPlayer.Health < 40; // [Ace] Don't stim player unless it's necessary.
+	}
+
+	clearscope bool CanHealSelf()
+	{
+		return Health < default.Health || BodyDamage > 0;
+	}
+	
+	clearscope bool NeedToHealSelf()
+	{
+		return Health <= default.Health * 0.8 || BodyDamage >= default.Health * 0.2;
+	}
+
+	clearscope bool PlayerIsIncapped()
+	{
+		return LinkedPlayer && LinkedPlayer.incapacitated >= 20 && (LinkedPlayer.incaptimer > MinIncap || LinkedPlayer.Health < 15); // [Ace] Player can't get up if lying on the floor at < 15 health, even if timer is 0.
+	}
+
+	clearscope bool PlayerNeedsMedic()
+	{
+		return LinkedPlayer && (LinkedPlayer.oldwoundcount > 0 || LinkedPlayer.aggravateddamage > 0 || LinkedPlayer.burncount > 0) && !LinkedPlayer.FindInventory('HDArmourWorn') && ((GetAmount('PortableMedikit') > 0 || SuturesLeft > 0) || CanApplyStim());
+	}
+
+	// --------------------------------------------------
+	// CONSTANTS/VARIABLES
+	// --------------------------------------------------
+
+	const MinIncap = 40;
+
+	int SuturesLeft;
+	const MaxSutures = 42;
+
+	const MedicRange = 40;
+
+	States
+	{
+		PullYouUp:
+			#### J 1
+			{
+				if (!PNeedsHelp || DistanceToPlayer > HDCONST_ONEMETRE * 1.2 || Order != FOrder_ComeAndHelp)
+				{
+					StopHealing();
+					return;
+				}
+
+				if (LinkedPlayer.incaptimer > MinIncap)
+				{
+					A_Face(LinkedPlayer);
+					if (!random(0, 4))
+					{
+						LinkedPlayer.A_StartSound("weapons/pocket", 20, CHANF_NOSTOP);
+					}
+					LinkedPlayer.incaptimer -= 6;
+				}
+			}
+			Loop;
+		StapleHumptyDumptyBackTogetherAgain:
+			#### JK 5;
+			#### L 5
+			{
+				if (DistanceToPlayer > HDCONST_ONEMETRE * 1.2 || Order != FOrder_ComeAndHelp)
+				{
+					StopHealing();
+					return;
+				}
+
+				if (CanApplyStim())
+				{
+					TakeInvItem(Find('PortableStimpack'), true);
+					SetStateLabel('ApplyStim');
+					return;
+				}
+
+				if (!PNeedsMedic)
+				{
+					ClearGoal();
+					SetStateLabel('PullYouUp');
+					return;
+				}
+
+				if (SuturesLeft == 0)
+				{
+					if (!TryUnwrapMedikit())
+					{
+						StopHealing();
+						return;
+					}
+				}
+
+				A_Face(LinkedPlayer);
+				A_StartSound("medikit/stopper", CHAN_WEAPON, CHANF_OVERLAP);
+				A_StartSound("misc/bulletflesh", CHAN_BODY, CHANF_OVERLAP);
+			}
+			#### LLLLL 3
+			{
+				if (DistanceToPlayer > HDCONST_ONEMETRE * 1.2 || Order != FOrder_ComeAndHelp)
+				{
+					StopHealing();
+					return;
+				}
+
+				A_StartSound("medikit/staple", CHAN_WEAPON);
+				A_Face(LinkedPlayer);
+
+				LinkedPlayer.A_StartSound("misc/smallslop", CHAN_BODY, CHANF_OVERLAP);
+				if (!random(0, 6))
+				{
+					SetStateLabel('PatchUpEnd');
+				}
+				LinkedPlayer.GiveBody(1);
+				LinkedPlayer.DamageMobj(invoker, null, 1, 'staples', DMG_FORCED);
+				LinkedPlayer.A_GiveInventory('SecondFlesh', 1);
+			}
+		PatchUpEnd:
+			#### J 10
+			{
+				SuturesLeft--;
+				PatchPlayerWounds(1);
+			}
+			Goto StapleHumptyDumptyBackTogetherAgain;
+
+		StapleOwnAss:
+			#### A 10;
+			#### A 5
+			{
+				if (!CanHealSelf() || Order != FOrder_HealSelf)
+				{
+					StopHealing();
+					return;
+				}
+
+				if (SuturesLeft == 0)
+				{
+					if (!TryUnwrapMedikit())
+					{
+						StopHealing();
+						return;
+					}
+				}
+
+				A_StartSound("medikit/stopper", CHAN_WEAPON, CHANF_OVERLAP);
+				A_StartSound("misc/bulletflesh", CHAN_BODY, CHANF_OVERLAP);
+			}
+			#### GGGGG 3
+			{
+				if (Order != FOrder_HealSelf)
+				{
+					StopHealing();
+					return;
+				}
+
+				A_StartSound("medikit/staple", CHAN_WEAPON);
+				A_StartSound("misc/smallslop", CHAN_BODY, CHANF_OVERLAP);
+				A_Vocalize(PainSound, CHANF_NOSTOP);
+			}
+		PatchUpSelfEnd:
+			#### A 10
+			{
+				HealSelf(10, HSF_HEALTH | HSF_BODYDAMAGE);
+				SuturesLeft--;
+			}
+			Goto StapleOwnAss;
+
+		ApplyStim:
+			#### J 25 A_Face(LinkedPlayer);
+			#### J 20
+			{
+				A_Face(LinkedPlayer);
+				LinkedPlayer.A_SetBlend("7a 3a 18", 0.1, 4);
+				LinkedPlayer.A_SetPitch(pitch + 2, SPF_INTERPOLATE);
+				LinkedPlayer.A_StartSound(LinkedPlayer.medsound, CHAN_VOICE);
+				LinkedPlayer.A_StartSound("misc/bulletflesh", CHAN_WEAPON);
+
+				Actor a = Spawn("InjectStimDummy", pos, ALLOW_REPLACE);
+				a.Accuracy = 40;
+				a.target = LinkedPlayer;
+
+				Actor b = Spawn("SpentStim", pos + (0, 0, height - 8), ALLOW_REPLACE);
+				b.A_ChangeVelocity(3, 1, 2, CVF_RELATIVE);
+				b.A_StartSound("weapons/grenopen", 8);
+			}
+			#### J 0 PrintMessage(GetResponse("MEDIC_STIMMED"), "Medic/Stimmed", PMType_General);
+			Goto StapleHumptyDumptyBackTogetherAgain;
+	}
+}

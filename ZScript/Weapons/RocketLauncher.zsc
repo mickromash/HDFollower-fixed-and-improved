@@ -1,0 +1,135 @@
+class FW_RocketLauncher : FollowerWeapon
+{
+	override string GetName() { return "Rocket Launcher"; }
+	override string GetIcon() { return "LAUNA0"; }
+	override class<HDAmmo>, class<HDMagAmmo>, int GetAmmoType() { return 'HDRocketAmmo', null, 5; }
+	override Name GetRealWeapon() { return 'HDRL'; }
+	override string GetLocalizationTag() { return "RL"; }
+	override double GetAdjustmentMult() { return 0.85; }
+
+	override FireSequenceResult DoFiringSequence(out int ticker, Actor trgt)
+	{
+		if (ticker % 16 == 0)
+		{
+			Owner.frame++;
+			RocketGrenade Proj;
+			Proj = RocketGrenade(Owner.Spawn("RocketGrenade", Owner.pos + (0, 0, Owner.GunHeight), ALLOW_REPLACE));
+			Proj.angle = Owner.angle;
+			Proj.target = Owner;
+			Proj.master = Owner;
+			Proj.pitch = Owner.pitch;
+			Proj.Primed = false;
+			Proj.IsRocket = true;
+
+			Owner.A_StartSound("weapons/rockignite", CHAN_AUTO);
+			Owner.A_StartSound("weapons/rockboom", CHAN_AUTO);
+			Owner.A_AlertMonsters();
+			ChamberedRound = CRType_Empty;
+			if (!TryChamberRound())
+			{
+				return FSResult_End;
+			}
+		}
+		return FSResult_None;
+	}
+	override bool DoReloadSequence(out int ticker)
+	{
+		switch (ticker)
+		{
+			case 8:
+			{
+				Owner.A_StartSound("weapons/rockopen", 6);
+				break;
+			}
+			case 12:
+			{
+				Owner.A_StartSound("weapons/rockopen2", 7, CHANF_OVERLAP);
+				break;
+			}
+			case 26:
+			{
+				Owner.A_StartSound("weapons/pocket", 8);
+				break;
+			}
+			case 32:
+			{
+				if (TryReload() == RResult_CanReload)
+				{
+					Owner.A_StartSound("weapons/rockreload", 7);
+					TryChamberRound();
+				}
+				else
+				{
+					return true;
+				}
+				break;
+			}
+			case 42:
+			{
+				ticker = 25;
+				break;
+			}
+		}
+		return false;
+	}
+	override int AssessPriority(Actor trgt, int shields, bool multitarget)
+	{
+		if (trgt.bBOSS)
+		{
+			return WPriority_VeryHigh;
+		}
+		if ((trgt is 'PainLord' || trgt is 'PainBringer' || shields > 300) && !multitarget)
+		{
+			return WPriority_VeryHigh;
+		}
+		if (trgt is 'Trilobite' && trgt.Health > trgt.default.Health * 0.5 && !multitarget)
+		{
+			return WPriority_Highest;
+		}
+		return WPriority_Nope;
+	}
+
+	override bool CheckWeaponCondition(Actor trgt)
+	{
+		if (Owner.distance3D(trgt) < HDCONST_ONEMETRE * 10)
+		{
+			return false;
+		}
+
+		bool otherFollowersSafe = true;
+		for (int i = 0; i < Owner.Handler.Followers.Size(); ++i)
+		{
+			HDFollower f = Owner.Handler.Followers[i];
+			bool hasSight = f.CheckSight(trgt, HDFollower.SF_NOINVISIBLE);
+			double dist = f.distance3D(trgt);
+			if (dist < HDCONST_ONEMETRE * 2 || dist < HDCONST_ONEMETRE * 7 && hasSight)
+			{
+				otherFollowersSafe = false;
+				break;
+			}
+		}
+		bool otherPlayersSafe = true;
+		for (int i = 0; i < MAXPLAYERS; ++i)
+		{
+			let plr = HDPlayerPawn(players[i].mo);
+			if (plr)
+			{
+				bool hasSight = plr.CheckSight(trgt, HDFollower.SF_NOINVISIBLE);
+				double dist = plr.distance3D(trgt);
+				if (dist < HDCONST_ONEMETRE * 2 || dist < HDCONST_ONEMETRE * 7 && hasSight)
+				{
+					otherPlayersSafe = false;
+					break;
+				}
+			}
+		}
+		
+		return otherFollowersSafe && otherPlayersSafe;
+	}
+
+	override void OnTransfer(HDWeapon wpn)
+	{
+		Mag = wpn.WeaponStatus[RLS_MAG];
+		ChamberedRound = wpn.WeaponStatus[RLS_CHAMBER] > 0 ? 2 : 0;
+	}
+}

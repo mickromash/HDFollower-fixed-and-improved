@@ -1,0 +1,442 @@
+#include "ZScript/Weapons/SMG.zsc"
+#include "ZScript/Weapons/Hunter.zsc"
+#include "ZScript/Weapons/ZM66.zsc"
+#include "ZScript/Weapons/RocketLauncher.zsc"
+#include "ZScript/Weapons/Liberator.zsc"
+#include "ZScript/Weapons/Boss.zsc"
+#include "ZScript/Weapons/Brontornis.zsc"
+
+extend class HDFollower
+{
+	enum TryReloadFlags
+	{
+		RLF_FORCE	= 1 << 0,
+		RLF_MANUAL	= 1 << 1,
+		RLF_SILENT	= 1 << 2,
+		RLF_NOJUMP	= 1 << 3,
+		RLF_DROPMAG = 1 << 4
+	}
+
+	enum IdleWeaponFlags
+	{
+		IWF_KEEPRELOADING = 1
+	}
+
+	// --------------------------------------------------
+	// VIRTUALS
+	// --------------------------------------------------
+
+	virtual clearscope int AdjustForDistance(Actor trgt, FollowerWeapon wpn)
+	{
+		return int(clamp((Distance3D(trgt) / (HDCONST_ONEMETRE * 2)) * wpn.GetAdjustmentMult(), 6, MaxTargetRange / (HDCONST_ONEMETRE * 2)));
+	}
+
+	// --------------------------------------------------
+	// ACTIONS
+	// --------------------------------------------------
+
+	private void IdleWeapon(int flags = 0)
+	{
+		if (SelWeapon)
+		{
+			if (SelWeapon.Status == FollowerWeapon.WStatus_Reloading && flags & IWF_KEEPRELOADING)
+			{
+				return;
+			}
+
+			if (hdf_debug & FDebug_Weapons)
+			{
+				string oldStatus = "";
+				switch (SelWeapon.Status)
+				{
+					case FollowerWeapon.WStatus_Reloading: oldStatus = " Was reloading."; break;
+					case FollowerWeapon.WStatus_Firing: oldStatus = " Was firing."; break;
+				}
+				Console.Printf("[%s] %s's %s was idled.%s", GetTimestamp(), GetTag(), SelWeapon.GetName(), oldStatus);
+			}
+			WeaponTicker = 0;
+			SelWeapon.Status = FollowerWeapon.WStatus_Idle;
+			SelWeapon.WeaponFlags = 0; // [Ace] Clear any temporary flags.
+		}
+	}
+
+	private void LookForWeapon()
+	{
+		if (Distance3D(LinkedPlayer) > MaxWaitRange)
+		{
+			PrintMessage(GetResponse("WEAPONGIVE_RANAWAY"), "WeaponGive/RanAway", PMType_Critical);
+			Status = FStatus_None;
+			tracer = null;
+			return;
+		}
+
+		CheckProximity("HDWeapon", radius + MaxSearchRange, 1, CPXF_CLOSEST | CPXF_SETTRACER | CPXF_ANCESTOR);
+		HDWeapon foundWeapon = HDWeapon(tracer);
+
+		if (foundWeapon)
+		{
+			let cls = FollowerWeapon.ConvertToFollowerWeapon(foundWeapon.GetClass(), Handler.AllWeapons);
+			if (!cls || FindWeapon(cls))
+			{
+				PrintMessage(GetResponse("WEAPONGIVE_NOTHANKS"), "WeaponGive/NoThanks", PMType_Important);
+				Status = FStatus_None;
+				tracer = null;
+				return;
+			}
+
+			let wep = FollowerWeapon.CreateAndAdd(cls, self);
+			wep.OnTransfer(foundWeapon);
+			foundWeapon.Destroy();
+			PrintMessage(GetResponse("WEAPONGIVE_NONE"), "WeaponGive/None", PMType_General);
+			A_StartSound("misc/w_pkup", 5);
+			Status = FStatus_None;
+		}
+		tracer = null;
+	}
+
+	protected void Aim()
+	{
+		// [Ace] Stop aiming if target is no longer valid, weapon is deselected, or the condition is not met.
+		if (!CheckTarget() || !SelWeapon || !SelWeapon.CheckWeaponCondition(FTarget.Actor))
+		{
+			IdleWeapon();
+			SetStateLabel('Idle');
+			return;
+		}
+
+		if (hdf_debug & FDebug_Aiming)
+		{
+			Console.Printf("[%s] %s is aiming at %s.", GetTimestamp(), GetTag(), FTarget.Actor.GetClassName());
+		}
+
+		double headOffset = FTarget.Actor.FindInventory('HDArmourWorn') && HDMobBase(FTarget.Actor) && !HDMobBase(FTarget.Actor).bHASHELMET ? FTarget.Actor.height * 0.2 : 0;
+		A_Face(FTarget.Actor, 0, 0, flags: FAF_MIDDLE, z_ofs: headOffset);
+		OldAim = (angle, pitch);
+
+		// [Ace] If you're incapped, follower can probably shoot over you. Otherwise it's not a good idea.
+		Actor BlockActor = AimBlocked();
+		if (BlockActor)
+		{
+			if (Distance3D(BlockActor) < HDCONST_ONEMETRE * 5)
+			{
+				if (LastMovementDir == 0)
+				{
+					double dangle = DeltaAngle(angle, AngleTo(BlockActor));
+					LastMovementDir = dangle > 0 ? -1 : 1;
+				}
+				A_ChangeVelocity(0, (default.MovementSpeed / frandom(1.3, 1.5)) * LastMovementDir, vel.z, CVF_RELATIVE | CVF_REPLACE);
+			}
+			AimTimer = 0;
+			SetStateLabel('Aiming');
+		}
+	}
+
+	protected void LeadShot()
+	{
+		if (!FTarget.Actor)
+		{
+			return;
+		}
+		
+		double headOffset = FTarget.Actor.FindInventory('HDArmourWorn') && HDMobBase(FTarget.Actor) && !HDMobBase(FTarget.Actor).bHASHELMET ? FTarget.Actor.height * 0.1 : 0;
+		A_Face(FTarget.Actor, 0, 0, flags: FAF_MIDDLE, z_ofs: headOffset);
+
+		// [Ace] Assume the average projectile travels at 500 m/s. Normally you'd want to use the actual speed, but things are a bit different here.
+		// Too lazy to add projectile info and whatnot. Maybe if this turns out to be too trash.
+		double ticsToTarget = Distance3D(FTarget.Actor) / (HDCONST_MPSTODUPT * 500.0);
+
+		vector2 newAim = (DeltaAngle(OldAim.x, angle), DeltaAngle(OldAim.y, pitch));
+		if (abs(newAim.x) > 45)
+		{
+			return;
+		}
+
+		newAim *= ticsToTarget;
+		let ltp=FTarget.Actor.pos;// - FTarget.Actor.vel;
+		let lsp=prev;
+		double ach=deltaangle(
+			hdmath.angleto(lsp.xy,ltp.xy),
+			hdmath.angleto(pos.xy,FTarget.Actor.pos.xy)
+		);
+		//angle = oldAim.x + newAim.x;
+		pitch = oldAim.y + newAim.y;
+	}
+
+	protected Actor AimBlocked()
+	{
+		FLineTraceData TraceData;
+		LineTrace(angle, MaxTargetRange, pitch, TRF_NOSKY, GunHeight, data: TraceData);
+		Actor a = TraceData.HitActor;
+		if (a && bFRIENDLY && (a is "PlayerPawn" || a is 'HDFollower' && a.bFRIENDLY || !a.bISMONSTER && a.bSOLID))
+		{
+			if (hdf_debug & FDebug_Aiming)
+			{
+				Console.Printf("[%s] %s's aim is being blocked by %s.", GetTimestamp(), GetTag(), a.GetClassName());
+			}
+			return a;
+		}
+		return null;
+	}
+
+	// [Ace] If weapon is out of ammo, reload.
+	bool TryReloadWeapon(FollowerWeapon wpn, int flags = 0)
+	{
+		if (!wpn || Status == FStatus_InactiveOrDead || SelWeapon && !(flags & RLF_FORCE))
+		{
+			return false;
+		}
+
+		int result = wpn.TryReload(FollowerWeapon.TRF_CHECK);
+		if (result == FollowerWeapon.RResult_CanReload)
+		{
+			if (hdf_debug & FDebug_Reloading)
+			{
+				Console.Printf("[%s] %s is trying to reload %s.", GetTimestamp(), GetTag(), wpn.GetName());
+			}
+			SelWeapon = wpn;
+			SelWeapon.Status = FollowerWeapon.WStatus_Reloading;
+			if (flags & RLF_DROPMAG)
+			{
+				SelWeapon.WeaponFlags |= FollowerWeapon.FWF_DROPMAG;
+			}
+			return true;
+		}
+		else if (result == FollowerWeapon.RResult_NoAmmo)
+		{
+			// [Ace] Keep complaining if manual.
+			if (!(flags & RLF_SILENT) && flags & RLF_MANUAL)
+			{
+				PrintMessage(GetResponse("NOAMMO_"..wpn.GetLocalizationTag()), "NoAmmo/"..wpn.GetLocalizationTag(), PMType_Critical);
+			}
+
+			if (!(flags & RLF_NOJUMP))
+			{
+				IdleWeapon();
+				SetStateLabel('Idle');
+			}
+		}
+		return false;
+	}
+
+	// [Ace; 16.01.22] It's not necessary to check if another follower is currently using the same weapon in order to prevent concentrated fire on trash.
+	// If the weapon priority is written properly, the follower will not select that weapon if it will be used in concentrated fire.
+	// Do that for all weapons and eventually no weapons will be selected, leading to the follower ignoring that particular target.
+	private void SelectBestWeapon(Actor trgt)
+	{
+		if (!trgt)
+		{
+			return;
+		}
+		
+		Array<FollowerWeapon> valid;
+		int shields = trgt.CountInv('HDMagicShield');
+		bool alreadyTargeted = IsAttackedBySomeoneElse(trgt, false);
+
+		bool debug = hdf_debug & FDebug_Weapons;
+
+		if (debug)
+		{
+			Console.Printf("[%s] %s is attempting to select best weapon.", GetTimestamp(), GetTag());
+		}
+
+		for (int i = 0; i < Weapons.Size(); ++i)
+		{
+			if (!Weapons[i].CheckWeaponCondition(trgt))
+			{
+				continue;
+			}
+
+			int priority = Weapons[i].AssessPriority(trgt, shields, alreadyTargeted);
+			if (priority == -1)
+			{
+				continue;
+			}
+
+			int insIndex = 0;
+			for (int j = 0; j < valid.Size(); ++j)
+			{
+				if (priority < valid[j].AssessPriority(trgt, shields, alreadyTargeted))
+				{
+					insIndex = j + 1;
+				}
+				else
+				{
+					insIndex = j;
+					break;
+				}
+			}
+			valid.Insert(insIndex, Weapons[i]);
+		}
+
+		FollowerWeapon newSel = null;
+		for (int i = 0; i < valid.Size(); ++i)
+		{
+			if (valid[i].HasAmmo())
+			{
+				newSel = valid[i];
+				break;
+			}
+			else if (valid[i].HasSpare())
+			{
+				TryReloadWeapon(valid[i], RLF_FORCE | RLF_SILENT | RLF_NOJUMP);
+				return;
+			}
+		}
+
+		if (!newSel && SelWeapon && debug)
+		{
+			Console.Printf("[%s] %s's %s was nulled. No usable weapons.", GetTimestamp(), GetTag(), SelWeapon.GetName());
+		}
+		if (SelWeapon != newSel)
+		{
+			if (newSel && debug)
+			{
+				Console.Printf("[%s] %s selected %s with %i rounds and %s spare ammo.", GetTimestamp(), GetTag(), newSel.GetName(), int(newSel.ChamberedRound == newSel.CRType_Chambered) + newSel.Mag, newSel.HasSpare() ? "some" : "no");
+			}
+			SelWeapon = newSel;
+			IdleWeapon();
+		}
+	}
+
+	void TryUseWeapon()
+	{
+		if (Status == FStatus_InactiveOrDead)
+		{
+			return;
+		}
+		
+		if (Status == FStatus_WaitingForWeapon)
+		{
+			PrintMessage(GetResponse("WEAPONGIVE_CANCEL"), "WeaponGive/Cancel", PMType_Important);
+			Status = FStatus_None;
+			return;
+		}
+
+		Status = FStatus_WaitingForWeapon;
+		PrintMessage(GetResponse("WEAPONGIVE_INIT"), "WeaponGive/Init", PMType_Important);
+	}
+
+	
+	// --------------------------------------------------
+	// INFORMATION
+	// --------------------------------------------------
+
+	clearscope FollowerWeapon FindWeapon(class<FollowerWeapon> wpn)
+	{
+		for (int i = 0; i < Weapons.Size(); ++i)
+		{
+			if (Weapons[i].GetClass() == wpn)
+			{
+				return Weapons[i];
+			}
+		}
+		return null;
+	}
+
+	clearscope FollowerWeapon FindWeaponByName(string wpnName)
+	{
+		for (int i = 0; i < Weapons.Size(); ++i)
+		{
+			if (Weapons[i].GetName().MakeLower().IndexOf(wpnName.MakeLower()) != -1)
+			{
+				return Weapons[i];
+			}
+		}
+		return null;
+	}
+
+	clearscope bool AmmoIsUsed(class<HDAmmo> cls)
+	{
+		for (int i = 0; i < Weapons.Size(); ++i)
+		{
+			class<HDAmmo> AType, MType;
+			[AType, MType] = Weapons[i].GetAmmoType();
+			if (!MType && AType == cls || MType == cls)
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+
+	clearscope bool HasUsableWeapons()
+	{
+		for (int i = 0; i < Weapons.Size(); ++i)
+		{
+			if (Weapons[i].HasAmmo() || Weapons[i].HasSpare())
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+
+	protected FollowerWeapon SelWeapon;
+	Array<FollowerWeapon> Weapons;
+
+	private int WeaponTicker;
+	private int AimTimer;
+	private bool ContinueReloading;
+	private vector2 OldAim;
+	private int FireResult;
+	private int LastMovementDir;
+
+	States
+	{
+		See:
+			#### H 2
+			{
+				LastMovementDir = 0;
+				Status = FStatus_None;
+				AimTimer = 0;
+			}
+		Aiming:
+			#### H 1; // [Ace] Otherwise it's gonna cause an infinite loop.
+			#### H 0 Aim(); // [Ace] This is on this line and not inside the anonymous function because of SetStateLabel.
+			#### H 0
+			{
+				if (AimTimer++ > AdjustForDistance(FTarget.Actor, SelWeapon))
+				{
+					if (hdf_debug & FDebug_Aiming)
+					{
+						Console.Printf("[%s] %s is trying to fire %s at %s.", GetTimestamp(), GetTag(), SelWeapon.GetName(), FTarget.Actor.GetClassName());
+					}
+					AimTimer = 0;
+					SetStateLabel('Shoot');
+				}
+			}
+			Loop;
+		Shoot:
+			#### H 1 Aim();
+			#### H 1
+			{
+				LastMovementDir = 0;
+				LeadShot();
+				FireResult = SelWeapon.DoFiringSequence(WeaponTicker, FTarget.Actor);
+				WeaponTicker++;
+			}
+			#### H 0
+			{
+				switch (FireResult)
+				{
+					case FollowerWeapon.FSResult_Repeat:
+					{
+						SetState(FindState('Shoot') + 1);
+						break;
+					}
+					case FollowerWeapon.FSResult_Restart:
+					{
+						SetStateLabel('See');
+						break;
+					}
+					case FollowerWeapon.FSResult_End:
+					{
+						IdleWeapon();
+						SetStateLabel('Idle');
+						break;
+					}
+				}
+			}
+			Loop;
+	}
+}

@@ -1,0 +1,94 @@
+extend class HDFollower
+{
+	// --------------------------------------------------
+	// VIRTUALS
+	// --------------------------------------------------
+	
+	virtual void GiveStartingItems(string input = "")
+	{
+		input = input.MakeLower();
+		input.Replace(" ", "");
+
+		Array<string> lines;
+		input.Split(lines, ",");
+
+		for (int i = 0; i < lines.Size(); ++i)
+		{
+			int amt = lines[i].Mid(3).ToInt();
+			if (amt == 0)
+			{
+				amt = 1;
+			}
+			string ref = lines[i].Left(3);
+
+			class<Inventory> cls = HDBackpack.FindByRefId(ref);
+			if (!cls)
+			{
+				Continue;
+			}
+
+			if (cls is 'GarrisonArmour' || cls is 'GarrisonArmourWorn' || cls is 'BattleArmour' || cls is 'BattleArmourWorn')
+			{
+				bool mega = cls == 'BattleArmour' || cls == 'BattleArmourWorn';
+				GiveArmour(1.0, mega ? 1.0 : 0, amt);
+				continue;
+			}
+
+			if (cls is 'HDWeapon' && !GetDefaultByType((class<HDWeapon>)(cls)).bWIMPY_WEAPON)
+			{
+				Bool GotWeapon;
+				for (int j = 0; j < Handler.AllWeapons.Size(); ++j)
+				{
+					let tempWpn = FollowerWeapon(new(Handler.AllWeapons[j]));
+					class<HDWeapon> realWpn = tempWpn.GetRealWeapon();
+					if (realWpn && realWpn == cls)
+					{
+						FollowerWeapon.CreateAndAdd(tempWpn.GetClass(), self);
+						GotWeapon=True;
+						Break;
+					}
+				}
+				if(GotWeapon)Continue;
+			}
+
+			if (IsValidItem(cls, true))
+			{
+				if (cls is 'HDMagAmmo')
+				{
+					for (int j = 0; j < amt; ++j)
+					{
+						HDMagAmmo spawned = HDMagAmmo(Spawn(cls, pos));
+						spawned.SyncAmount();
+						if (!AddMag(spawned, flags: FIF_FORCE))
+						{
+							spawned.Destroy();
+							return;
+						}
+					}
+				}
+				else
+				{
+					if (cls is 'HDBackpack')
+					{
+						let bp = HDBackpack(GiveInventoryType('HDBackpack'));
+						bp.LoadoutConfigure(input.Mid(input.IndexOf("bak") + 3));
+					}
+					else if (cls is 'PortableRadsuit')
+					{
+						let rad = GiveInventoryType('PortableRadsuit');
+						UseInventory(rad);
+					}
+					else
+					{
+						Inventory spawned = Inventory(Spawn(cls, pos));
+						spawned.Amount = amt;
+						if (!AddItem(spawned, amt, flags: FIF_FORCE))
+						{
+							spawned.Destroy();
+						}
+					}
+				}
+			}
+		}
+	}
+}

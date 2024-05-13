@@ -1,0 +1,2246 @@
+class FollowerCommand ui
+{
+	string EventName;
+	int Args[3];
+	bool UseUiHandler;
+}
+
+struct FollowerSelection
+{
+	Array<HDFollower> SelFollowers;
+	clearscope HDFollower GetLast() const // [Ace] This const is gonna bite me in the ass. Mark my words.
+	{
+		int Size = SelFollowers.Size();
+		return Size > 0 ? SelFollowers[Size - 1] : null;
+	}
+}
+
+struct FollowerUiData
+{
+	Array<Inventory> ValidItems;
+	int RepeatTics[4];
+	int ArrowKeysHeld;
+	int SlotFocused;
+	int PSlotIndex;
+	int PSlotSubIndex;
+	int TransferAmount;
+	int FSlotIndex;
+	bool Confirmation;
+	int SelectedColorIndex;
+	Array<string> LastCommands;
+	int LastCommandShift;
+}
+
+extend class FollowerHandler
+{
+	enum FollowerMenus
+	{
+		FMenu_Closed,
+		FMenu_Recruitment,
+		FMenu_Followers,
+		FMenu_Main,
+		FMenu_OrdersStance,
+		FMenu_Inventory,
+		FMenu_Miscellaneous,
+		FMenu_ColorPicker
+	}
+
+	enum KeyHold
+	{
+		HOLD_LEFT = 1,
+		HOLD_RIGHT = 2,
+		HOLD_UP = 4,
+		HOLD_DOWN = 8,
+	}
+
+	static const int TranslationColors[] =
+	{
+		0xFFFF7F7F, 0xFFFF0000, 0xFFBF3F3F, 0xFF7F0000, 0xFF4F2F2F, 0xFFFF927F, 0xFFFF2600, 0xFFBF523F, 0xFF7F1300, 0xFF4F342F, 
+		0xFFFFA57F, 0xFFFF4C00, 0xFFBF663F, 0xFF7F2600, 0xFF4F392F, 0xFFFFB87F, 0xFFFF7200, 0xFFBF793F, 0xFF7F3900, 0xFF4F3E2F, 
+		0xFFFFCC7F, 0xFFFF9900, 0xFFBF8C3F, 0xFF7F4C00, 0xFF4F422F, 0xFFFFDF7F, 0xFFFFBF00, 0xFFBF9F3F, 0xFF7F5F00, 0xFF4F472F, 
+		0xFFFFF27F, 0xFFFFE500, 0xFFBFB23F, 0xFF7F7200, 0xFF4F4C2F, 0xFFF8FF7F, 0xFFF2FF00, 0xFFB8BF3F, 0xFF797F00, 0xFF4E4F2F, 
+		0xFFE5FF7F, 0xFFCBFF00, 0xFFA5BF3F, 0xFF657F00, 0xFF494F2F, 0xFFD2FF7F, 0xFFA5FF00, 0xFF92BF3F, 0xFF527F00, 0xFF444F2F, 
+		0xFFBFFF7F, 0xFF7FFF00, 0xFF7FBF3F, 0xFF3F7F00, 0xFF3F4F2F, 0xFFACFF7F, 0xFF59FF00, 0xFF6CBF3F, 0xFF2C7F00, 0xFF3A4F2F, 
+		0xFF99FF7F, 0xFF33FF00, 0xFF59BF3F, 0xFF197F00, 0xFF364F2F, 0xFF85FF7F, 0xFF0CFF00, 0xFF46BF3F, 0xFF067F00, 0xFF314F2F, 
+		0xFF7FFF8C, 0xFF00FF19, 0xFF3FBF4C, 0xFF007F0C, 0xFF2F4F32, 0xFF7FFF9F, 0xFF00FF3F, 0xFF3FBF5F, 0xFF007F1F, 0xFF2F4F37, 
+		0xFF7FFFB2, 0xFF00FF65, 0xFF3FBF72, 0xFF007F32, 0xFF2F4F3C, 0xFF7FFFC5, 0xFF00FF8C, 0xFF3FBF85, 0xFF007F46, 0xFF2F4F41, 
+		0xFF7FFFD8, 0xFF00FFB2, 0xFF3FBF98, 0xFF007F59, 0xFF2F4F46, 0xFF7FFFEB, 0xFF00FFD8, 0xFF3FBFAC, 0xFF007F6C, 0xFF2F4F4A, 
+		0xFF7FFFFF, 0xFF00FFFE, 0xFF3FBFBF, 0xFF007F7F, 0xFF2F4F4F, 0xFF7FEBFF, 0xFF00D8FF, 0xFF3FACBF, 0xFF006C7F, 0xFF2F4A4F, 
+		0xFF7FD8FF, 0xFF00B2FF, 0xFF3F99BF, 0xFF00597F, 0xFF2F464F, 0xFF7FC5FF, 0xFF008CFF, 0xFF3F85BF, 0xFF00467F, 0xFF2F414F, 
+		0xFF7FB2FF, 0xFF0065FF, 0xFF3F72BF, 0xFF00327F, 0xFF2F3C4F, 0xFF7F9FFF, 0xFF003FFF, 0xFF3F5FBF, 0xFF001F7F, 0xFF2F374F, 
+		0xFF7F8CFF, 0xFF0019FF, 0xFF3F4CBF, 0xFF000C7F, 0xFF2F334F, 0xFF857FFF, 0xFF0C00FF, 0xFF463FBF, 0xFF06007F, 0xFF312F4F, 
+		0xFF987FFF, 0xFF3200FF, 0xFF593FBF, 0xFF19007F, 0xFF362F4F, 0xFFAC7FFF, 0xFF5900FF, 0xFF6C3FBF, 0xFF2C007F, 0xFF3A2F4F, 
+		0xFFBF7FFF, 0xFF7F00FF, 0xFF7F3FBF, 0xFF3F007F, 0xFF3F2F4F, 0xFFD27FFF, 0xFFA500FF, 0xFF923FBF, 0xFF52007F, 0xFF442F4F, 
+		0xFFE57FFF, 0xFFCB00FF, 0xFFA53FBF, 0xFF65007F, 0xFF492F4F, 0xFFF87FFF, 0xFFF200FF, 0xFFB83FBF, 0xFF79007F, 0xFF4E2F4F, 
+		0xFFFF7FF2, 0xFFFF00E5, 0xFFBF3FB2, 0xFF7F0072, 0xFF4F2F4C, 0xFFFF7FDF, 0xFFFF00BF, 0xFFBF3F9F, 0xFF7F005F, 0xFF4F2F47, 
+		0xFFFF7FCC, 0xFFFF0099, 0xFFBF3F8C, 0xFF7F004C, 0xFF4F2F42, 0xFFFF7FB8, 0xFFFF0072, 0xFFBF3F79, 0xFF7F0039, 0xFF4F2F3E, 
+		0xFFFF7FA5, 0xFFFF004C, 0xFFBF3F66, 0xFF7F0026, 0xFF4F2F39, 0xFFFF7F92, 0xFFFF0026, 0xFFBF3F52, 0xFF7F0013, 0xFF4F2F34, 
+		0xFF000000, 0xFF191919, 0xFF333333, 0xFF4C4C4C, 0xFF666666, 0xFF7F7F7F, 0xFF999999, 0xFFB2B2B2, 0xFFCCCCCC, 0xFFE5E5E5
+	};
+	
+	private transient ui HUDFont MainFont;
+
+	// [Ace] Because this is the 5th time I've tried to convert these to UI scope: FUCKING DON'T.
+	// These are data/play scope because NetworkProcess needs to access them.
+	private transient int FollowerMenuLevel[MAXPLAYERS];
+	private transient int FollowerPage[MAXPLAYERS];
+	private transient HDOperator SelMarine[MAXPLAYERS];
+	private transient FollowerSelection Selection[MAXPLAYERS];
+	private transient int Modifiers[MAXPLAYERS];
+
+	private transient ui bool InInputMode[MAXPLAYERS];
+	private transient ui string InputString[MAXPLAYERS];
+
+	private transient ui CVar Scale;
+	private transient ui CVar UiColorCVar;
+
+	private transient ui FollowerUiData UiData[MAXPLAYERS];
+
+	// [Ace] This is the foreground used to make the dark squares.
+	const DarkAlpha = 128;
+
+	const FollowersPerPage = 8;
+	const InvColumns = 6;
+	const PickerColumns = 20;
+	const ColSquareSize = 6;
+	const SlotSize = 24;
+	const Spacing = 1;
+	
+	override void RenderOverlay(RenderEvent e)
+	{
+		if (!MainFont)
+		{
+			MainFont = HUDFont.Create("CONFONT");
+		}
+
+		int OriginalWidth = StatusBar.HorizontalResolution;
+		int OriginalHeight = StatusBar.VerticalResolution;
+
+		if (!UiColorCVar)
+		{
+			UiColorCVar = CVar.GetCVar('hdf_uicolor', players[consoleplayer]);
+		}
+		if (!Scale)
+		{
+			Scale = CVar.GetCVar('hdf_uiscale', players[consoleplayer]);
+		}
+
+		double uiScale = Scale.GetFloat();
+		StatusBar.BeginHUD(1.0, true);
+		StatusBar.SetSize(StatusBar.RelTop, int(640 / uiScale), int(480 / uiScale));
+
+		if (FollowerMenuLevel[consoleplayer] > FMenu_Closed && !AutomapActive && GameState == GS_LEVEL)
+		{
+			int uiCol = UiColorCVar.GetInt();
+			if (uiCol == 0)
+			{
+				uiCol = players[consoleplayer].GetDisplayColor();
+			}
+			DrawCommandMenu(HDStatusBar(StatusBar), (0, 40), StatusBar.DI_SCREEN_LEFT | StatusBar.DI_SCREEN_VCENTER | StatusBar.DI_TEXT_ALIGN_LEFT, 0x80000000 | uiCol, MainFont);
+		}
+
+		// --------------- PRETEND WE WERE NEVER HERE ---------------
+
+		StatusBar.BeginHUD(1.0, false);
+		StatusBar.SetSize(StatusBar.RelTop, OriginalWidth, OriginalHeight);
+	}
+
+	// ----------------------------------------------------------------------
+	//
+	// NAVIGATION AND WHATNOT
+	//
+	// ----------------------------------------------------------------------
+
+	override void UiTick()
+	{
+		Super.UiTick();
+
+		switch (FollowerMenuLevel[consoleplayer])
+		{
+			// --------------------------------------------------------------------------------
+			//
+			// --------------------------------------------------------------------------------
+
+			case FMenu_Inventory:
+			{
+				int size = Selection[consoleplayer].SelFollowers.Size();
+				if (size > 1 || InInputMode[consoleplayer])
+				{
+					break;
+				}
+
+				HDFollower lastFol = Selection[consoleplayer].GetLast();
+				int maxSIndex = HDFollower.SlotCount - 1;
+				if (UiData[consoleplayer].ArrowKeysHeld & HOLD_LEFT && UiData[consoleplayer].RepeatTics[0] % 3 == 0)
+				{
+					if (UiData[consoleplayer].SlotFocused == 0 && UiData[consoleplayer].FSlotIndex % InvColumns > 0)
+					{
+						UiData[consoleplayer].FSlotIndex = max(UiData[consoleplayer].FSlotIndex - 1, 0);
+					}
+					else if (UiData[consoleplayer].SlotFocused == 1)
+					{
+						if (--UiData[consoleplayer].PSlotSubIndex < 0)
+						{
+							UiData[consoleplayer].PSlotSubIndex = maxSIndex;
+						}
+					}
+					else if (UiData[consoleplayer].SlotFocused == 2)
+					{
+						int amt = Modifiers[consoleplayer] & OpMod_Shift ? 20 : 2;
+						UiData[consoleplayer].TransferAmount = clamp(UiData[consoleplayer].TransferAmount - amt, 0, 1000);
+					}
+				}
+				if (UiData[consoleplayer].ArrowKeysHeld & HOLD_RIGHT && UiData[consoleplayer].RepeatTics[1] % 3 == 0)
+				{
+					if (UiData[consoleplayer].SlotFocused == 0 && UiData[consoleplayer].FSlotIndex % InvColumns < InvColumns - 1)
+					{
+						UiData[consoleplayer].FSlotIndex = min(UiData[consoleplayer].FSlotIndex + 1, maxSIndex);
+					}
+					else if (UiData[consoleplayer].SlotFocused == 1)
+					{
+						if (++UiData[consoleplayer].PSlotSubIndex > maxSIndex)
+						{
+							UiData[consoleplayer].PSlotSubIndex = 0;
+						}
+					}
+					else if (UiData[consoleplayer].SlotFocused == 2)
+					{
+						int amt = Modifiers[consoleplayer] & OpMod_Shift ? 20 : 2;
+						UiData[consoleplayer].TransferAmount = clamp(UiData[consoleplayer].TransferAmount + amt, 0, 1000);
+					}
+				}
+				if (UiData[consoleplayer].ArrowKeysHeld & HOLD_UP && UiData[consoleplayer].RepeatTics[2] % 3 == 0)
+				{
+					if (UiData[consoleplayer].SlotFocused == 0)
+					{
+						if (UiData[consoleplayer].FSlotIndex > InvColumns - 1)
+						{
+							UiData[consoleplayer].FSlotIndex = max(UiData[consoleplayer].FSlotIndex - InvColumns, 0);
+						}
+					}
+					else if (UiData[consoleplayer].SlotFocused == 1)
+					{
+						UpdateValidItems(consoleplayer, lastFol);
+						if (--UiData[consoleplayer].PSlotIndex < 0)
+						{
+							UiData[consoleplayer].PSlotIndex = UiData[consoleplayer].ValidItems.Size() - 1;
+						}
+					}
+				}
+				if (UiData[consoleplayer].ArrowKeysHeld & HOLD_DOWN && UiData[consoleplayer].RepeatTics[3] % 3 == 0)
+				{
+					if (UiData[consoleplayer].SlotFocused == 0)
+					{
+						if (UiData[consoleplayer].FSlotIndex < maxSIndex - (InvColumns - 1))
+						{
+							UiData[consoleplayer].FSlotIndex = min(UiData[consoleplayer].FSlotIndex + InvColumns, maxSIndex);
+						}
+					}
+					else if (UiData[consoleplayer].SlotFocused == 1)
+					{
+						UpdateValidItems(consoleplayer, lastFol);
+						if (++UiData[consoleplayer].PSlotIndex == UiData[consoleplayer].ValidItems.Size())
+						{
+							UiData[consoleplayer].PSlotIndex = 0;
+						}
+					}
+				}
+				break;
+			}
+
+			// --------------------------------------------------------------------------------
+			//
+			// --------------------------------------------------------------------------------
+
+			case FMenu_ColorPicker:
+			{
+				int maxIndex = TranslationColors.Size() - 1;
+				if (UiData[consoleplayer].ArrowKeysHeld & HOLD_LEFT && UiData[consoleplayer].SelectedColorIndex % PickerColumns > 0 && UiData[consoleplayer].RepeatTics[0] % 3 == 0)
+				{
+					UiData[consoleplayer].SelectedColorIndex = max(UiData[consoleplayer].SelectedColorIndex - 1, 0);
+				}
+				if (UiData[consoleplayer].ArrowKeysHeld & HOLD_RIGHT && UiData[consoleplayer].SelectedColorIndex % PickerColumns < PickerColumns - 1 && UiData[consoleplayer].RepeatTics[1] % 3 == 0)
+				{
+					UiData[consoleplayer].SelectedColorIndex = min(UiData[consoleplayer].SelectedColorIndex + 1, maxIndex);
+				}
+				if (UiData[consoleplayer].ArrowKeysHeld & HOLD_UP && UiData[consoleplayer].SelectedColorIndex > PickerColumns - 1 && UiData[consoleplayer].RepeatTics[2] % 3 == 0)
+				{
+					UiData[consoleplayer].SelectedColorIndex = max(UiData[consoleplayer].SelectedColorIndex - PickerColumns, 0);
+				}
+				if (UiData[consoleplayer].ArrowKeysHeld & HOLD_DOWN && UiData[consoleplayer].RepeatTics[3] % 3 == 0)
+				{
+					UiData[consoleplayer].SelectedColorIndex = min(UiData[consoleplayer].SelectedColorIndex + PickerColumns, maxIndex);
+				}
+				break;
+			}
+		}
+
+		UiData[consoleplayer].RepeatTics[0] = UiData[consoleplayer].ArrowKeysHeld & HOLD_LEFT ? UiData[consoleplayer].RepeatTics[0] + 1 : 0;
+		UiData[consoleplayer].RepeatTics[1] = UiData[consoleplayer].ArrowKeysHeld & HOLD_RIGHT ? UiData[consoleplayer].RepeatTics[1] + 1 : 0;
+		UiData[consoleplayer].RepeatTics[2] = UiData[consoleplayer].ArrowKeysHeld & HOLD_UP ? UiData[consoleplayer].RepeatTics[2] + 1 : 0;
+		UiData[consoleplayer].RepeatTics[3] = UiData[consoleplayer].ArrowKeysHeld & HOLD_DOWN ? UiData[consoleplayer].RepeatTics[3] + 1 : 0;
+
+		if (FollowerMenuLevel[consoleplayer] != FMenu_Inventory)
+		{
+			UiData[consoleplayer].SlotFocused = 0;
+			UiData[consoleplayer].FSlotIndex = 0;
+			UiData[consoleplayer].PSlotIndex = 0;
+			UiData[consoleplayer].PSlotSubIndex = 0;
+		}
+
+		if (UiData[consoleplayer].Confirmation)
+		{
+			if (FollowerMenuLevel[consoleplayer] == FMenu_Closed)
+			{
+				UiData[consoleplayer].Confirmation = false;
+			}
+			else
+			{
+				HDFollower lastFol = Selection[consoleplayer].GetLast();
+				if (lastFol.Health > 0 && FollowerMenuLevel[consoleplayer] != FMenu_Miscellaneous || lastFol.Health <= 0 && FollowerMenuLevel[consoleplayer] != FMenu_Main)
+				{
+					UiData[consoleplayer].Confirmation = false;
+				}
+			}
+		}
+
+		if (UiData[consoleplayer].SlotFocused < 2)
+		{
+			UiData[consoleplayer].TransferAmount = 0;
+		}
+
+		if (UiData[consoleplayer].SlotFocused < 1)
+		{
+			UiData[consoleplayer].PSlotSubIndex = 0;
+		}
+
+		int size = UiData[consoleplayer].ValidItems.Size();
+		UiData[consoleplayer].PSlotIndex = clamp(UiData[consoleplayer].PSlotIndex, 0, size - 1);
+		if (size > 0 && !UiData[consoleplayer].ValidItems[UiData[consoleplayer].PSlotIndex])
+		{
+			UiData[consoleplayer].ValidItems.Delete(UiData[consoleplayer].PSlotIndex);
+			if (UiData[consoleplayer].SlotFocused == 2)
+			{
+				UiData[consoleplayer].SlotFocused = 1;
+				UiData[consoleplayer].TransferAmount = 0;
+			}
+		}
+	}
+
+	// ----------------------------------------------------------------------
+	//
+	// COMMAND MENU
+	//
+	// ----------------------------------------------------------------------
+
+	private ui void DrawCommandMenu(HDStatusBar sb, vector2 pos, int flags, Color col, HUDFont fnt)
+	{
+		let plr = players[consoleplayer].mo;
+		vector2 OriginalPos = pos;
+		int rectHeight = fnt.mFont.GetHeight() + 4;
+
+		// [Ace] This is still valid even when multiple followers are selected.
+		// [24.09.2021] Note to self: before you freak out again that "THE INVENTORY MENUS ARE BUGGED", keep in mind that dead and hostile followers are always
+		// excluded from the selection. They will not mess up all of the lastFol conditions because lastFol is GUARANTEED to be a living being. Friendly, too.
+
+		HDFollower lastFol = Selection[consoleplayer].GetLast();
+		int selSize = Selection[consoleplayer].SelFollowers.Size();
+
+		switch (FollowerMenuLevel[consoleplayer])
+		{
+			case FMenu_Recruitment:
+			{
+				if (!SelMarine[consoleplayer] || SelMarine[consoleplayer].Health <= 0)
+				{
+					SendNetworkEvent("HDF_SetFollowerMenu", FMenu_Closed);
+					return;
+				}
+
+				Array<string> commands;
+				commands.Push("$FLW_CMDRECRUIT");
+				commands.Push("$FLW_CMDCANCEL");
+
+				string n = (SelMarine[consoleplayer].bFRIENDLY ? StringTable.Localize("$FLW_CMDFRIENDLY") : StringTable.Localize("$FLW_CMDHOSTILE")..StringTable.Localize("$FLW_CMDMARINE"));
+				DrawRectangle(sb, pos, (140, rectHeight), col, fnt, GetTruncatedText(n, 16), flags, Font.FindFontColor('FLW_NameBlue'));
+				pos.y += rectHeight + Spacing;
+
+				for (int i = 0; i < commands.Size(); ++i)
+				{
+					DrawRectangle(sb, pos, (140, rectHeight), col, fnt, (i + 1)..") "..StringTable.Localize(commands[i]), flags);
+					pos.y += rectHeight + Spacing;
+				}
+				break;
+			}
+
+			// --------------------------------------------------------------------------------
+			//
+			// --------------------------------------------------------------------------------
+
+			case FMenu_Followers:
+			{
+				if (Followers.Size() == 0)
+				{
+					SendNetworkEvent("HDF_SetFollowerMenu", FMenu_Closed);
+					return;
+				}
+				
+				int FSize = Followers.Size();
+				int RelSize = min(FollowersPerPage, FSize - FollowersPerPage * FollowerPage[consoleplayer]);
+				if (RelSize > 4)
+				{
+					pos.y -= (rectHeight * 2 - 4) * 4;
+				}
+
+				int LastIndex = 0;
+				for (int i = FollowersPerPage * FollowerPage[consoleplayer]; i < min(FollowersPerPage * (FollowerPage[consoleplayer] + 1), FSize); ++i)
+				{
+					LastIndex++;
+					bool valid = Followers[i].CanInteractWith(false);
+					int blockSize = valid || Followers[i].Squad > 0 ? rectHeight * 2 - 2 : rectHeight;
+					DrawFollowerRectangle(sb, pos, (190, blockSize), col, fnt, LastIndex, Followers[i], valid, flags);
+					pos.y += blockSize + Spacing;
+				}
+				if (FSize > FollowersPerPage * (FollowerPage[consoleplayer] + 1))
+				{
+					LastIndex++;
+					DrawRectangle(sb, pos, (190, rectHeight), col, fnt, LastIndex..StringTable.Localize("$FLW_CMDNEXT"), flags);
+					pos.y += rectHeight + Spacing;
+				}
+				if (FollowerPage[consoleplayer] > 0)
+				{
+					LastIndex++;
+					if (LastIndex == 10)
+					{
+						LastIndex = 0;
+					}
+					DrawRectangle(sb, pos, (190, rectHeight), col, fnt, LastIndex..StringTable.Localize("$FLW_CMDBACK"), flags);
+					pos.y += rectHeight + Spacing;
+				}
+				break;
+			}
+
+			// --------------------------------------------------------------------------------
+			//
+			// --------------------------------------------------------------------------------
+
+			case FMenu_Main:
+			{
+				if (!lastFol || lastFol.LinkedPlayer != plr || !lastFol.bFRIENDLY && lastFol.Health > 0)
+				{
+					SendNetworkEvent("HDF_SetFollowerMenu", FMenu_Closed);
+					return;
+				}
+
+				if (selSize > 1)
+				{
+					DrawRectangle(sb, pos, (160, rectHeight), col, fnt, selSize..StringTable.Localize("$FLW_CMDFOLLOWERS"), flags, Font.FindFontColor('FLW_NameBlue'));
+					pos.y += rectHeight + Spacing;
+
+					Array<string> commands;
+					commands.Push("$FLW_CMDORDERS");
+					commands.Push(InInputMode[consoleplayer] ? InputString[consoleplayer].."_" : "Input command");
+					commands.Push("$FLW_CMDMISCCOM");
+					if (Followers.Size() > 1)
+					{
+						commands.Push("$FLW_CMDBACK1");
+					}
+
+					for (int i = 0; i < commands.Size(); ++i)
+					{
+						DrawRectangle(sb, pos, (160, rectHeight), col, fnt, (i + 1)..") "..StringTable.Localize(commands[i]), flags);
+						pos.y += rectHeight + Spacing;
+					}
+				}
+				else if (lastFol.Health <= 0)
+				{
+					DrawRectangle(sb, pos, (260, rectHeight), col, fnt, GetTruncatedText(lastFol.GetTag(), 27), flags, Font.FindFontColor('FLW_NameBlue'));
+					pos.y += rectHeight + Spacing;
+
+					int RequiredSips = lastFol.GetRequiredSips();
+					int RequiredBlood = lastFol.GetRequiredBlood();
+					string BloodDanger;
+					if (RequiredBlood < 10)
+					{
+						BloodDanger = "$FLW_BLDFEEDSAFE";
+					}
+					else if (RequiredBlood < 20)
+					{
+						BloodDanger = "$FLW_BLDFEEDRISKY";
+					}
+					else if (RequiredBlood < 30)
+					{
+						BloodDanger = "$FLW_BLDFEEDDANGER";
+					}
+					else if (RequiredBlood < 40)
+					{
+						BloodDanger = "$FLW_BLDFEEDEXTRISKY";
+					}
+					else if (RequiredBlood < 50)
+					{
+						BloodDanger = "$FLW_BLDFEEDDEAD";
+					}
+					else
+					{
+						BloodDanger = "$FLW_BLDFEEDDEATH";
+					}
+
+					Array<string> commands;
+					commands.Push(StringTable.Localize("$FLW_CMDCARRYFLW"));
+					if (lastFol.ResurrectType & HDFollower.RESF_BLUES)
+					{
+						commands.Push((sb.CheckInventory("HDHealingPotion", 1) ? "" : "\c[Red]")..StringTable.Localize("$FLW_CMDBLUE").."\c[Blue]("..RequiredSips.."/12)\c-");
+					}
+					if (lastFol.ResurrectType & HDFollower.RESF_BLOOD)
+					{
+						commands.Push(StringTable.Localize("$FLW_CMDFEEDBLD")..StringTable.Localize(BloodDanger));
+					}
+					commands.Push("Manage inventory");
+					if (lastFol.bCANDISMISS)
+					{
+						commands.Push("\c[FLW_BloodRed]"..(UiData[consoleplayer].Confirmation ? StringTable.Localize("$FLW_CMDCONFRIM") : StringTable.Localize("$FLW_CMDDISMIS")).."\c-");
+					}
+					if (Followers.Size() > 1)
+					{
+						commands.Push(StringTable.Localize("$FLW_CMDBACK1"));
+					}
+
+					for (int i = 0; i < commands.Size(); ++i)
+					{
+						DrawRectangle(sb, pos, (260, rectHeight), col, fnt, (i + 1)..") "..commands[i], flags);
+						pos.y += rectHeight + Spacing;
+					}
+				}
+				else
+				{
+					DrawRectangle(sb, pos, (160, rectHeight), col, fnt, GetTruncatedText(lastFol.GetTag(), 19), flags, Font.FindFontColor('FLW_NameBlue'));
+					pos.y += rectHeight + Spacing;
+
+					if (Followers.Size() == 1 && lastFol.CanInteractWith(false))
+					{
+						double dist = lastFol.Distance3D(players[consoleplayer].mo) / HDCONST_ONEMETRE;
+						DrawRectangle(sb, pos, (160, rectHeight), col, fnt, String.Format(StringTable.Localize("$FLW_CMDDIST"), dist), flags, Font.CR_DARKGRAY);
+						pos.y += rectHeight + Spacing;
+					}
+
+					Array<string> commands;
+					commands.Push("$FLW_CMDORDERSSTANCE");
+					commands.Push("$FLW_CMDCARRYFLW");
+					commands.Push("$FLW_CMDMANAGEINVENTOR");
+					commands.Push("$FLW_CMDMISCCOM");
+					if (Followers.Size() > 1)
+					{
+						commands.Push("$FLW_CMDBACK1");
+					}
+
+					for (int i = 0; i < commands.Size(); ++i)
+					{
+						DrawRectangle(sb, pos, (160, rectHeight), col, fnt, (i + 1)..") "..StringTable.Localize(commands[i]), flags);
+						pos.y += rectHeight + Spacing;
+					}
+				}
+				break;
+			}
+
+			// --------------------------------------------------------------------------------
+			//
+			// --------------------------------------------------------------------------------
+
+			case FMenu_OrdersStance:
+			{
+				if (!lastFol || lastFol.LinkedPlayer != plr)
+				{
+					SendNetworkEvent("HDF_SetFollowerMenu", FMenu_Closed);
+					return;
+				}
+				static const string orders[] = { "$FLW_CMDORDFLW", "$FLW_CMDORDSTAY", "$FLW_CMDORDGOTHERE", "$FLW_CMDORDHELPME", "$FLW_CMDORDHEALING" };
+				static const string stances[] = { "$FLW_CMDSTANAGR", "$FLW_CMDSTANPAS" };
+
+				if (selSize > 1)
+				{
+					DrawRectangle(sb, pos, (240, rectHeight), col, fnt, selSize..StringTable.Localize("$FLW_CMDFOLLOWERS"), flags, Font.FindFontColor('FLW_NameBlue'));
+				}
+				else
+				{
+					DrawRectangle(sb, pos, (240, rectHeight), col, fnt, GetTruncatedText(lastFol.GetTag(), 30), flags, Font.FindFontColor('FLW_NameBlue'));
+				}
+				pos.y += rectHeight + Spacing;
+
+				for (int i = 0; i < orders.Size(); ++i)
+				{
+					DrawRectangle(sb, pos, (240, rectHeight), col, fnt, (i + 1)..") "..(selSize == 1 && lastFol.Order == i ? "\c[Green]" : "")..StringTable.Localize(orders[i]).."\c-", flags);
+					pos.y += rectHeight + Spacing;
+				}
+				for (int i = 0; i < stances.Size(); ++i)
+				{
+					DrawRectangle(sb, pos, (240, rectHeight), col, fnt, (orders.Size() + i + 1)..") "..(selSize == 1 && lastFol.Stance == i ? "\c[Green]" : "")..StringTable.Localize(stances[i]).."\c-", flags);
+					pos.y += rectHeight + Spacing;
+				}
+				DrawRectangle(sb, pos, (240, rectHeight), col, fnt, (orders.Size() + stances.Size() + 1)..StringTable.Localize("$FLW_CMDBACK"), flags);
+				break;
+			}
+
+			// --------------------------------------------------------------------------------
+			//
+			// --------------------------------------------------------------------------------
+
+			case FMenu_Inventory:
+			{
+				if (!lastFol || lastFol.LinkedPlayer != plr)
+				{
+					SendNetworkEvent("HDF_SetFollowerMenu", FMenu_Closed);
+					return;
+				}
+
+				int w = InvColumns * SlotSize + (InvColumns - 1);
+				int wepHeight = rectHeight * 3;
+
+				pos.y -= 70;
+
+				int wSize = lastFol.Weapons.Size();
+				if (wSize > 1)
+				{
+					for (int i = 0; i < wSize; ++i)
+					{
+						DrawWeaponRectangle(sb, pos + (0, (wepHeight + Spacing) * i) - (0, wSize > 7 ? (wepHeight + Spacing) * (wSize - 7) : 0), (w, wepHeight), col, fnt, flags, lastFol, lastFol.Weapons[i]);
+					}
+					pos.x += w + Spacing;
+				}
+
+				int wearablesShown = 0;
+				if (wSize == 1 || UiData[consoleplayer].SlotFocused == 0)
+				{
+					for (Inventory next = lastFol.Inv; next != null; next = next.Inv)
+					{
+						if (next is 'HDMagicShield')
+						{
+							continue;
+						}
+
+						if (next.Icon || next is 'HDArmourWorn')
+						{
+							DrawWearableRectangle(sb, pos + (w + Spacing, rectHeight + Spacing + wearablesShown * (wepHeight + Spacing)), (wepHeight, wepHeight), col, fnt, flags, next);	
+							wearablesShown++;
+						}
+					}
+				}
+
+				DrawRectangle(sb, pos, (w + (wearablesShown > 0 ? wepHeight + Spacing : (UiData[consoleplayer].SlotFocused > 0 && wSize != 1 ? w + Spacing : 0)), rectHeight), col, fnt, GetTruncatedText(lastFol.GetTag(), 30), flags, Font.FindFontColor('FLW_NameBlue'));
+				pos.y += rectHeight + Spacing;
+
+				if (wSize == 1)
+				{
+					DrawWeaponRectangle(sb, pos, (w, wepHeight), col, fnt, flags, lastFol, lastFol.Weapons[0], selSize > 1 ? 1 : 0);
+					pos.y += wepHeight + Spacing;
+				}
+
+				int rows = int(ceil(HDFollower.SlotCount / double(InvColumns)));
+				int invh = rows * SlotSize + rows;
+				DrawFollowerInventory(sb, pos, (w, invh), col, fnt, flags, lastFol);
+
+				if (UiData[consoleplayer].SlotFocused > 0)
+				{
+					DrawPlayerInventory(sb, pos + (w + Spacing, 0), (w, invh), col, fnt, flags);
+				}
+				pos.y += invh;
+
+				DrawRectangle(sb, pos, (w, rectHeight), col, fnt, StringTable.Localize("$FLW_CMDINVBACK"), flags);
+				pos.y += rectHeight + Spacing;
+
+				if (lastFol.CanInteractWith(false))
+				{
+					DrawRectangle(sb, pos, (w, rectHeight), col, fnt, InInputMode[consoleplayer] ? InputString[consoleplayer].."_" : StringTable.Localize("$FLW_CMDINVCOMAN"), flags);
+					pos.y += rectHeight + Spacing;
+				}
+
+				DrawRectangle(sb, pos, (w, rectHeight), col, fnt, StringTable.Localize("$FLW_CMDINVTAKE"), flags); pos.y += rectHeight + Spacing;
+				DrawRectangle(sb, pos, (w, rectHeight), col, fnt, StringTable.Localize("$FLW_CMDINVGIVE"), flags); pos.y += rectHeight + Spacing;
+				break;
+			}
+
+			// --------------------------------------------------------------------------------
+			//
+			// --------------------------------------------------------------------------------
+
+			case FMenu_Miscellaneous:
+			{
+				if (!lastFol || lastFol.LinkedPlayer != plr)
+				{
+					SendNetworkEvent("HDF_SetFollowerMenu", FMenu_Closed);
+					return;
+				}
+
+				if (selSize > 1)
+				{
+					DrawRectangle(sb, pos, (200, rectHeight), col, fnt, selSize..StringTable.Localize("$FLW_CMDFOLLOWERS"), flags, Font.FindFontColor('FLW_NameBlue'));
+				}
+				else
+				{
+					DrawRectangle(sb, pos, (200, rectHeight), col, fnt, GetTruncatedText(lastFol.GetTag(), 24), flags, Font.FindFontColor('FLW_NameBlue'));
+				}
+				pos.y += rectHeight + Spacing;
+
+				Array<string> commands;
+				if (!(lastFol.bDONTTRANSLATE))
+				{
+					commands.Push(StringTable.Localize("$FLW_CMDCHNGCOL"));
+				}
+				if (selSize == 1 && lastFol.bCANDISMISS)
+				{
+					commands.Push("\c[FLW_BloodRed]"..(UiData[consoleplayer].Confirmation ? StringTable.Localize("$FLW_CMDCONFRIM") : StringTable.Localize("$FLW_CMDDISMIS")).."\c-");
+				}
+				commands.Push(StringTable.Localize("$FLW_CMDBACK1"));
+
+				for (int i = 0; i < commands.Size(); ++i)
+				{
+					DrawRectangle(sb, pos, (200, rectHeight), col, fnt, (i + 1)..") "..commands[i], flags);
+					pos.y += rectHeight + Spacing;
+				}
+				break;
+			}
+
+			// --------------------------------------------------------------------------------
+			//
+			// --------------------------------------------------------------------------------
+
+			case FMenu_ColorPicker:
+			{
+				if (!lastFol || lastFol.LinkedPlayer != plr)
+				{
+					SendNetworkEvent("HDF_SetFollowerMenu", FMenu_Closed);
+					return;
+				}
+
+				int tSize = TranslationColors.Size();
+				int rows = int(ceil(tSize / double(PickerColumns)));
+				double w = PickerColumns * ColSquareSize + (PickerColumns - 1) + 2;
+				double h = rows * ColSquareSize + (rows - 1) + 2;
+
+				if (selSize > 1)
+				{
+					DrawRectangle(sb, pos, (w, rectHeight), col, fnt, selSize..StringTable.Localize("$FLW_CMDFOLLOWERS"), flags, Font.FindFontColor('FLW_NameBlue'));
+				}
+				else
+				{
+					DrawRectangle(sb, pos, (w, rectHeight), col, fnt, GetTruncatedText(lastFol.GetTag(), int(ceil(w / 8))), flags, Font.FindFontColor('FLW_NameBlue'));
+				}
+				pos.y += rectHeight + Spacing;
+
+				sb.Fill(col, pos.x, pos.y, w, h, flags);
+				for (int i = 0; i < tSize; ++i)
+				{
+					if (UiData[consoleplayer].SelectedColorIndex == i)
+					{
+						Color selCol = TranslationColors[i];
+						sb.Fill(Color(selCol.a, int(selCol.r * 2), int(selCol.g * 2), int(selCol.b * 2)), pos.x + (ColSquareSize + 1) * (i % PickerColumns), pos.y + (ColSquareSize + 1) * (i / PickerColumns), ColSquareSize + 2, ColSquareSize + 2, flags);
+					}
+					sb.Fill(TranslationColors[i], pos.x + 1 + (ColSquareSize + 1) * (i % PickerColumns), pos.y + 1 + (ColSquareSize + 1) * (i / PickerColumns), ColSquareSize, ColSquareSize, flags);
+				}
+
+				DrawRectangle(sb, pos + (0, h + 1), (w, rectHeight), col, fnt, StringTable.Localize("$FLW_CMDBACK2"), flags);
+				pos.y += rectHeight + Spacing;
+				break;
+			}
+
+		}
+	}
+
+	// ----------------------------------------------------------------------
+	//
+	// UI FUNCTIONS
+	//
+	// ----------------------------------------------------------------------
+
+	private ui void DrawFollowerRectangle(HDStatusBar sb, vector2 pos, vector2 size, Color col, HUDFont fnt, int index, HDFollower flw, bool valid, int flags)
+	{
+		bool selected = Selection[consoleplayer].SelFollowers.Find(flw) != Selection[consoleplayer].SelFollowers.Size();
+		Color c = valid ? (selected ? Color(192, 96, 255, 96) : col) : Color(192, 255, 16, 16);
+		sb.Fill(c, pos.x, pos.y, size.x, size.y, flags);
+		sb.Fill(Color(DarkAlpha, 0, 0, 0), pos.x + 1, pos.y + 1, size.x - 2, size.y - 2, flags);
+
+		pos += (2, 2);
+		int FontHeight = fnt.mFont.GetHeight();
+		sb.DrawString(fnt, index..") "..GetTruncatedText(flw.GetTag(), 20), pos, flags, Font.FindFontColor('FLW_NameBlue'));
+		pos.y += FontHeight + 2;
+
+		if (flw.Squad > 0)
+		{
+			sb.DrawString(fnt, StringTable.Localize("$FOLLOWER_SQUAD_"..flw.Squad), pos, flags, Font.CR_GOLD);
+			pos.x += size.x - 6;
+		}
+
+		if (valid)
+		{
+			double dist = flw.Distance3D(players[consoleplayer].mo) / HDCONST_ONEMETRE;
+			sb.DrawString(fnt, String.Format(StringTable.Localize("$FLW_CMDDIST"), dist), pos, flags | (flw.Squad > 0 ? sb.DI_TEXT_ALIGN_RIGHT : 0), Font.CR_DARKGRAY);
+		}
+	}
+
+	private ui void DrawWeaponRectangle(HDStatusBar sb, vector2 pos, vector2 size, Color col, HUDFont fnt, int flags, HDFollower flw, FollowerWeapon wpn, int flags2 = 0)
+	{
+		// [Ace] flags2 values are as follows:
+		// 1 - multiselect
+
+		sb.Fill(col, pos.x, pos.y, size.x, size.y, flags);
+		sb.Fill(Color(DarkAlpha, 0, 0, 0), pos.x + 1, pos.y + 1, size.x - 2, size.y - 2, flags);
+
+		sb.DrawString(fnt, wpn.GetName(), pos + (2, 2), flags, Font.FindFontColor('FLW_WeaponBlue'));
+
+		if (flw.Weapons.Size() > 1)
+		{
+			sb.DrawString(fnt, sb.FormatNumber(flw.Weapons.Find(wpn) + 1, 1, 3), pos + (size.x - 4, 2), flags | sb.DI_TEXT_ALIGN_RIGHT, Font.CR_GOLD);
+		}
+
+		// [Ace] Icon.
+		sb.DrawImage(wpn.GetIcon(), pos + (4, 12), flags | sb.DI_ITEM_LEFT_TOP, 1.0, (size.x / 2, 17));
+
+		// [Ace] Spare ammo.
+		if (!(flags2 & 1))
+		{
+			class<HDAmmo> AType, MType; int MaxMag;
+			[AType, MType, MaxMag] = wpn.GetAmmoType();
+
+			sb.DrawString(fnt, StringTable.Localize("$FLW_CMDAMMO"), pos + (size.x - 4, size.y - 24), flags | sb.DI_TEXT_ALIGN_RIGHT, Font.CR_WHITE);
+			string ChamberString = "";
+			switch (wpn.ChamberedRound)
+			{
+				case FollowerWeapon.CRType_Chambered: ChamberString = "+"; break;
+				case FollowerWeapon.CRType_Spent: ChamberString = "_"; break;
+			}
+			sb.DrawString(fnt, ChamberString..sb.FormatNumber(flw.GetAmount(MType ? MType : AType), 1, 4), pos + (size.x - 4, size.y - 15), flags | sb.DI_TEXT_ALIGN_RIGHT, Font.CR_WHITE);
+
+			// [Ace] Magazine bar.
+			sb.Fill(col, pos.x + 1, pos.y + (size.y - 4), size.x - 2, 1, flags);
+			sb.Fill(Color(DarkAlpha, 0, 0, 0), pos.x + 1, pos.y + (size.y - 3), size.x - 2, 2, flags);
+			int mag = MaxMag == 1 ? int(wpn.ChamberedRound == wpn.CRType_Chambered) : wpn.Mag;
+			double amPercent = clamp(mag / double(MaxMag), 0, 1.0);
+			sb.Fill(GetPercentColor(amPercent), pos.x + 1, pos.y + (size.y - 3), (size.x - 2) * AmPercent, 2, flags);
+		}
+	}
+
+	private ui void DrawFollowerInventory(HDStatusBar sb, vector2 pos, vector2 size, Color col, HUDFont fnt, int flags, HDFollower flw)
+	{
+		for (int i = 0; i < HDFollower.SlotCount; ++i)
+		{
+			vector2 realPos = (SlotSize * (i % InvColumns) + (i % InvColumns), SlotSize * (i / InvColumns) + (i / InvColumns));
+
+			Color realCol = col;
+			switch (UiData[consoleplayer].FSlotIndex == i ? (UiData[consoleplayer].SlotFocused > 0 ? 2 : 1) : 0)
+			{
+				case 1: realCol = Color(192, 255, 255, 128); break;
+				case 2: realCol = Color(192, 96, 255, 96); break;
+			}
+			sb.Fill(realCol, pos.x + realPos.x, pos.y + realPos.y, SlotSize, SlotSize, flags);
+			sb.Fill(Color(DarkAlpha, 0, 0, 0), pos.x + 1 + realPos.x, pos.y + 1 + realPos.y, SlotSize - 2, SlotSize - 2, flags);
+
+			let item = flw.Slots[i];
+			if (item)
+			{
+				sb.DrawImage(item.Icon, pos + (SlotSize, SlotSize) / 2 + realPos, flags | sb.DI_ITEM_CENTER, 1.0, (SlotSize, SlotSize) - (6, 6), (3.0, 3.0));
+				if (InventorySlot.IsRealMag(item.ItemClass) || item.Amount > int(!item.Multipickup))
+				{
+					sb.DrawString(sb.mAmountFont, sb.FormatNumber(item.Amount, 1, 4), pos + (1, SlotSize - 8) + realPos, flags, Font.CR_GOLD);
+				}
+			}
+		}
+	}
+
+	// [Ace] Contrary to what the function is called, it only draws the *valid* items.
+	private ui void DrawPlayerInventory(HDStatusBar sb, vector2 pos, vector2 size, Color col, HUDFont fnt, int flags)
+	{
+		for (int i = 0; i < HDFollower.SlotCount; ++i)
+		{
+			vector2 realPos = (SlotSize * (i % InvColumns) + (i % InvColumns), SlotSize * (i / InvColumns) + (i / InvColumns));
+
+			Color realCol = col;
+			switch (UiData[consoleplayer].PSlotSubIndex == i ? (UiData[consoleplayer].SlotFocused > 1 ? 2 : 1) : 0)
+			{
+				case 1: realCol = Color(192, 255, 255, 128); break;
+				case 2: realCol = Color(192, 96, 255, 96); break;
+			}
+			sb.Fill(realCol, pos.x + RealPos.x, pos.y + RealPos.y, SlotSize, SlotSize, flags);
+			sb.Fill(Color(DarkAlpha, 0, 0, 0), pos.x + 1 + RealPos.x, pos.y + 1 + RealPos.y, SlotSize - 2, SlotSize - 2, flags);
+		}
+
+		int vSize = UiData[consoleplayer].ValidItems.Size();
+		
+		Inventory item;
+		if(UiData[consoleplayer].PSlotIndex>-1)item = vSize > 0 && UiData[consoleplayer].PSlotIndex < vSize ? UiData[consoleplayer].ValidItems[UiData[consoleplayer].PSlotIndex] : null;
+		if (!item)
+		{
+			return;
+		}
+
+		int count = item is 'HDMagAmmo' ? HDMagAmmo(item).Mags.Size() : (HDPickup(item) && !HDPickup(item).bMULTIPICKUP ? item.Amount : 1);
+		for (int i = 0; i < min(count, HDFollower.SlotCount); ++i)
+		{
+			vector2 realPos = (SlotSize * (i % InvColumns) + (i % InvColumns), SlotSize * (i / InvColumns) + (i / InvColumns));
+			int amt = item.Amount;
+			string icon = ""..item.icon;
+			if (item is 'HDMagAmmo')
+			{
+				HDMagAmmo mag = HDMagAmmo(item);
+				amt = mag.Mags[i];
+				int magIndex = mag.Mags.Size() - 1;
+				int magAmt = mag.Mags[magIndex];
+				icon = mag.getmagsprite(magAmt);
+			}
+			//string icon = ItemStorage.GetIcon(item, amt);
+			sb.DrawImage(icon, pos + (SlotSize, SlotSize) / 2 + RealPos, flags | sb.DI_ITEM_CENTER, 1.0, (SlotSize, SlotSize) - (6, 6), (3.0, 3.0));
+			if (InventorySlot.IsRealMag(item.GetClass()) || HDPickup(item) && HDPickup(item).bMULTIPICKUP && item.Amount > 0)
+			{
+				sb.DrawString(sb.mAmountFont, sb.FormatNumber(amt, 1, 4), pos + (2, SlotSize - 8) + realPos, flags, Font.CR_GOLD);
+			}
+		}
+
+		if (UiData[consoleplayer].SlotFocused == 2)
+		{
+			int rectHeight = MainFont.mFont.GetHeight() + 4;
+			DrawAmountRectangle(sb, pos + (0, size.y), (size.x, rectHeight), col, fnt, UiData[consoleplayer].TransferAmount, 1000, flags, Font.CR_CREAM);
+		}
+	}
+
+	private ui void DrawAmountRectangle(HDStatusBar sb, vector2 pos, vector2 size, Color col, HUDFont fnt, int amt, int maxAmt, int flags, int textCol = Font.CR_WHITE)
+	{
+		sb.Fill(col, pos.x, pos.y, size.x, size.y, flags);
+		sb.Fill(Color(DarkAlpha, 0, 0, 0), pos.x + 1, pos.y + 1, size.x - 2, size.y - 2, flags);
+		double percent = amt / double(maxAmt);
+		sb.Fill(Color(DarkAlpha, 255, 255, 128), pos.x + 1, pos.y + 1, (size.x - 2) * percent, size.y - 2, flags);
+		sb.DrawString(fnt, StringTable.Localize("$FLW_CMDAMOUNT")..amt, pos + (2, 2), flags, textCol);
+	}
+
+	private ui void DrawWearableRectangle(HDStatusBar sb, vector2 pos, vector2 size, Color col, HUDFont fnt, int flags, Inventory wearable)
+	{
+		sb.Fill(col, pos.x, pos.y, size.x, size.y, flags);
+		sb.Fill(Color(DarkAlpha, 0, 0, 0), pos.x + 1, pos.y + 1, size.x - 2, size.y - 2, flags);
+		String WearSprite = ""..wearable.Icon;
+		if (wearable is 'HDWeapon')
+		{
+			let wpn = HDWeapon(wearable);
+			int num = wpn.GetSBarNum();
+			sb.DrawString(fnt, sb.FormatNumber(num, 1, 4), pos + size - (4, 10), flags | sb.DI_TEXT_ALIGN_RIGHT, sb.SavedColour);
+		}
+		if (wearable is 'HDArmourWorn')
+		{
+			sb.DrawString(fnt, (HDArmourWorn(wearable).Mega ? "\c[Blue]" : "\c[DarkGreen]")..HDArmourWorn(wearable).Durability, pos + size - (4, 10), flags | sb.DI_TEXT_ALIGN_RIGHT);
+			WearSprite = HDArmourWorn(wearable).mega?"ARMCA0":"ARMSA0";
+		}
+		sb.DrawImage(WearSprite, pos + size / 2, flags | sb.DI_ITEM_CENTER, box: size - (3, 3));
+	}
+
+	private ui void DrawRectangle(HDStatusBar sb, vector2 pos, vector2 size, Color col, HUDFont fnt, string command, int flags, int textCol = Font.CR_WHITE)
+	{
+		sb.Fill(col, pos.x, pos.y, size.x, size.y, flags);
+		sb.Fill(Color(DarkAlpha, 0, 0, 0), pos.x + 1, pos.y + 1, size.x - 2, size.y - 2, flags);
+		if (command != "")
+		{
+			sb.DrawString(fnt, command, (pos.x + 2, pos.y + (size.y - fnt.mFont.GetHeight()) / 2), flags, textCol); 
+		}
+	}
+
+	// ----------------------------------------------------------------------
+	//
+	// INPUT PROCESS
+	//
+	// ----------------------------------------------------------------------
+
+	override bool InputProcess(InputEvent e)
+	{
+		// [Ace] This exists so that your input isn't arbitrarily intercepted when it shouldn't be. Returning directly won't always fly.
+		bool ret = false;
+
+		bool IsShift = e.KeyScan == InputEvent.Key_LShift || e.KeyScan == InputEvent.Key_RShift;
+		bool IsCtrl = e.KeyScan == InputEvent.Key_LCtrl || e.KeyScan == InputEvent.Key_RCtrl;
+		bool IsAlt = e.KeyScan == InputEvent.Key_LAlt || e.KeyScan == InputEvent.Key_RAlt;
+		if (IsShift || IsCtrl || IsAlt)
+		{
+			if (e.Type == InputEvent.Type_KeyDown)
+			{
+				SendNetworkEvent("HDF_SetModifiers", 1, IsShift ? OpMod_Shift : (IsAlt ? OpMod_Alt : OpMod_Ctrl));
+			}
+			else if (e.Type == InputEvent.Type_KeyUp)
+			{
+				SendNetworkEvent("HDF_SetModifiers", 0, IsShift ? OpMod_Shift : (IsAlt ? OpMod_Alt : OpMod_Ctrl));
+			}
+		}
+
+		if (e.Type == InputEvent.Type_KeyDown)
+		{
+			switch (e.KeyScan)
+			{
+				case InputEvent.Key_LeftArrow: UiData[consoleplayer].ArrowKeysHeld |= HOLD_LEFT; break;
+				case InputEvent.Key_RightArrow: UiData[consoleplayer].ArrowKeysHeld |= HOLD_RIGHT; break;
+				case InputEvent.Key_UpArrow: UiData[consoleplayer].ArrowKeysHeld |= HOLD_UP; break;
+				case InputEvent.Key_DownArrow: UiData[consoleplayer].ArrowKeysHeld |= HOLD_DOWN; break;
+			}
+		}
+		else if (e.Type == InputEvent.Type_KeyUp)
+		{
+			switch (e.KeyScan)
+			{
+				case InputEvent.Key_LeftArrow: UiData[consoleplayer].ArrowKeysHeld &= ~HOLD_LEFT; break;
+				case InputEvent.Key_RightArrow: UiData[consoleplayer].ArrowKeysHeld &= ~HOLD_RIGHT; break;
+				case InputEvent.Key_UpArrow: UiData[consoleplayer].ArrowKeysHeld &= ~HOLD_UP; break;
+				case InputEvent.Key_DownArrow: UiData[consoleplayer].ArrowKeysHeld &= ~HOLD_DOWN; break;
+			}
+		}
+		
+		// --------------------------------------------------------------------------------
+		// THIS IS WHERE THE REAL FUN BEGINS
+		// --------------------------------------------------------------------------------
+
+		if (FollowerMenuLevel[consoleplayer] > FMenu_Closed && e.Type == InputEvent.Type_KeyDown)
+		{
+			int selSize = Selection[consoleplayer].SelFollowers.Size();
+			if (selSize == 0 && FollowerMenuLevel[consoleplayer] >= FMenu_Main)
+			{
+				return false;
+			}
+
+			HDFollower lastFol = Selection[consoleplayer].GetLast();
+
+			if (InInputMode[consoleplayer])
+			{
+				// [Ace] 'C' or 'c'. From what I tested, uppercase isn't even used, but let's check for it just in case.
+				if (Modifiers[consoleplayer] & OpMod_Ctrl && (e.KeyChar == 67 || e.KeyChar == 99))
+				{
+					InInputMode[consoleplayer] = false;
+					return true;
+				}
+				switch (e.KeyScan)
+				{
+					case InputEvent.Key_UpArrow:
+					{
+						int size = UiData[consoleplayer].LastCommands.Size();
+						if (size > 0)
+						{
+							if (UiData[consoleplayer].LastCommandShift < size)
+							{
+								UiData[consoleplayer].LastCommandShift++;
+							}
+							InputString[consoleplayer] = UiData[consoleplayer].LastCommands[size - UiData[consoleplayer].LastCommandShift];
+						}
+						return true;
+					}
+					case InputEvent.Key_DownArrow:
+					{
+						int size = UiData[consoleplayer].LastCommands.Size();
+						if (size > 0 && UiData[consoleplayer].LastCommandShift > 0)
+						{
+							UiData[consoleplayer].LastCommandShift--;
+							InputString[consoleplayer] = UiData[consoleplayer].LastCommandShift == 0 ? "" : UiData[consoleplayer].LastCommands[size - UiData[consoleplayer].LastCommandShift];
+						}
+						return true;
+					}
+					case InputEvent.Key_Enter:
+					{
+						InInputMode[consoleplayer] = false;
+						ret = true;
+						break;
+					}
+
+					// Delete last character.
+					case InputEvent.Key_Backspace:
+					{
+						InputString[consoleplayer].DeleteLastCharacter();
+						return true;
+					}
+
+					default:
+					{
+						if (InputString[consoleplayer].Length() < 17 && e.KeyChar >= 32 && e.KeyChar <= 126) // [Ace] Only valid characters.
+						{
+							InputString[consoleplayer] = InputString[consoleplayer]..String.Format("%c", e.KeyChar);
+						}
+						return true;
+					}
+				}
+			}
+
+			int NumKey = e.KeyChar - 48;
+			if (NumKey == 0)
+			{
+				NumKey = 10;
+			}
+
+			Array<FollowerCommand> commands;
+			switch (FollowerMenuLevel[consoleplayer])
+			{
+				case FMenu_Recruitment:
+				{
+					commands.Push(CreateCommand("HDF_ConfirmRecruitment"));
+					commands.Push(CreateCommand("HDF_SetFollowerMenu", FMenu_Closed));
+					break;
+				}
+
+				// --------------------------------------------------------------------------------
+				//
+				// --------------------------------------------------------------------------------
+
+				case FMenu_Followers:
+				{
+					if (e.KeyScan == InputEvent.Key_Enter)
+					{
+						SendNetworkEvent("HDF_ApplySelection");
+						ret = true;
+					}
+					else if (Modifiers[consoleplayer] & OpMod_Ctrl)
+					{
+						int Page = Modifiers[consoleplayer] & OpMod_Alt ? FollowerPage[consoleplayer] : -1;
+						if (NumKey >= 1 && NumKey <= 10)
+						{
+							if (Modifiers[consoleplayer] & OpMod_Ctrl)
+							{
+								if (Modifiers[consoleplayer] & OpMod_Alt)
+								{
+									SendNetworkEvent("HDF_AssignSquad", NumKey);
+								}
+								else if (NumKey < 10)
+								{
+									SendNetworkEvent("HDF_ManipulateSelection", 3, NumKey);
+									if (!(Modifiers[consoleplayer] & OpMod_Shift))
+									{
+										SendNetworkEvent("HDF_ApplySelection");
+									}
+								}
+							}
+						}
+						else
+						{
+							switch (e.KeyChar)
+							{
+								// [Ace] A - Select (A)ll, (I)nvert, (D)eselect.
+								case 65: case 97:
+								{
+									SendNetworkEvent("HDF_ManipulateSelection", 0, Page);
+									break;
+								}
+								case 73: case 105:
+								{
+									SendNetworkEvent("HDF_ManipulateSelection", 1, Page);
+									break;
+								}
+								case 68: case 100:
+								{
+									SendNetworkEvent("HDF_ManipulateSelection", 2, Page);
+									break;
+								}
+							}
+						}
+						ret = true;
+					}
+					else
+					{
+						int folSize = Followers.Size();
+						int relSize = min(FollowersPerPage, folSize - FollowersPerPage * FollowerPage[consoleplayer]);
+						bool hasMorePages = folSize > FollowersPerPage * (FollowerPage[consoleplayer] + 1);
+						int selIndex = (NumKey + FollowersPerPage * FollowerPage[consoleplayer]) - 1;
+						if (NumKey == relSize + 1 && hasMorePages)
+						{
+							SendNetworkEvent("HDF_SetFollowerPage", 1);
+						}
+						else if (FollowerPage[consoleplayer] > 0 && NumKey == relSize + (hasMorePages ? 2 : 1))
+						{
+							SendNetworkEvent("HDF_SetFollowerPage", 0);
+						}
+						else if (NumKey > 0 && (NumKey - 1) < relSize)
+						{
+							if (Modifiers[consoleplayer] & OpMod_Shift)
+							{
+								SendNetworkEvent("HDF_ToggleSelection", selIndex);
+							}
+							else
+							{
+								SendNetworkEvent("HDF_ToggleSelection", selIndex, true);
+								SendNetworkEvent("HDF_ApplySelection");
+							}
+						}
+					}
+					break;
+				}
+
+				// --------------------------------------------------------------------------------
+				//
+				// --------------------------------------------------------------------------------
+
+				case FMenu_Main:
+				{
+					if (selSize > 1)
+					{
+						if (e.KeyScan == InputEvent.Key_Enter && !InInputMode[consoleplayer] && ret)
+						{
+							if (!InInputMode[consoleplayer] && ret)
+							{
+								ProcessInputString(InputString[consoleplayer], selSize > 1);
+								return true;
+							}
+						}
+						switch (NumKey)
+						{
+							case 1:
+							{
+								SendNetworkEvent("HDF_SetFollowerMenu", FMenu_OrdersStance);
+								break;
+							}
+							case 2:
+							{
+								EnterInputMode(consoleplayer);
+								return true;
+							}
+							case 3:
+							{
+								SendNetworkEvent("HDF_SetFollowerMenu", FMenu_Miscellaneous);
+								break;
+							}
+							case 4:
+							{
+								if (Followers.Size() > 1)
+								{
+									SendNetworkEvent("HDF_SetFollowerMenu", FMenu_Followers);
+								}
+								break;
+							}
+						}
+					}
+					else if (lastFol.Health <= 0)
+					{
+						commands.Push(CreateCommand("HDF_CarryFollower"));
+						if (lastFol.ResurrectType & HDFollower.RESF_BLUES)
+						{
+							commands.Push(CreateCommand("HDF_TryRevive", 0));
+						}
+						if (lastFol.ResurrectType & HDFollower.RESF_BLOOD)
+						{
+							commands.Push(CreateCommand("HDF_TryRevive", 1));
+						}
+						commands.Push(CreateCommand("HDF_SetFollowerMenu", FMenu_Inventory));
+						if (lastFol.bCANDISMISS)
+						{
+							if (UiData[consoleplayer].Confirmation)
+							{
+								commands.Push(CreateCommand("HDF_DismissFollower"));
+							}
+							else
+							{
+								commands.Push(CreateCommand("HDF_ToggleConfirmation", true, useUiHandler: true));
+							}
+						}
+						if (Followers.Size() > 1)
+						{
+							commands.Push(CreateCommand("HDF_SetFollowerMenu", FMenu_Followers));
+						}
+					}
+					else if (lastFol.bFRIENDLY)
+					{
+						commands.Push(CreateCommand("HDF_SetFollowerMenu", FMenu_OrdersStance));
+						commands.Push(CreateCommand("HDF_CarryFollower"));
+						commands.Push(CreateCommand("HDF_SetFollowerMenu", FMenu_Inventory));
+						commands.Push(CreateCommand("HDF_SetFollowerMenu", FMenu_Miscellaneous));
+						if (Followers.Size() > 1)
+						{
+							commands.Push(CreateCommand("HDF_SetFollowerMenu", FMenu_Followers));
+						}
+					}
+					break;
+				}
+
+				// --------------------------------------------------------------------------------
+				//
+				// --------------------------------------------------------------------------------
+					
+				case FMenu_OrdersStance:
+				{
+					commands.Push(CreateCommand("HDF_ChangeOrders", HDFollower.FOrder_Follow));
+					commands.Push(CreateCommand("HDF_ChangeOrders", HDFollower.FOrder_Stay));
+					commands.Push(CreateCommand("HDF_ChangeOrders", HDFollower.FOrder_GoThere));
+					commands.Push(CreateCommand("HDF_ChangeOrders", HDFollower.FOrder_ComeAndHelp));
+					commands.Push(CreateCommand("HDF_ChangeOrders", HDFollower.FOrder_HealSelf));
+					commands.Push(CreateCommand("HDF_ChangeStance", HDFollower.FStance_Aggressive));
+					commands.Push(CreateCommand("HDF_ChangeStance", HDFollower.FStance_Passive));
+					commands.Push(CreateCommand("HDF_SetFollowerMenu", FMenu_Main));
+					break;
+				}
+
+				// --------------------------------------------------------------------------------
+				//
+				// --------------------------------------------------------------------------------
+
+				case FMenu_Inventory:
+				{
+					
+
+					// [Ace] Navigation.
+					int maxSIndex = HDFollower.SlotCount - 1;
+					switch (e.KeyScan)
+					{
+						case InputEvent.Key_Enter:
+						{
+							if (!InInputMode[consoleplayer] && ret)
+							{
+								ProcessInputString(InputString[consoleplayer], selSize > 1);
+								return true;
+							}
+
+							if (selSize > 1)
+							{
+								break;
+							}
+
+							if (UiData[consoleplayer].SlotFocused == 0)
+							{
+								UpdateValidItems(consoleplayer, lastFol);
+								UiData[consoleplayer].SlotFocused++;
+								for (int i = 0; i < UiData[consoleplayer].ValidItems.Size(); ++i)
+								{
+									class<HDAmmo> AType, MType; int MaxMag;
+									if (lastFol.Weapons.Size() > 0)
+									{
+										[AType, MType, MaxMag] = lastFol.Weapons[0].GetAmmoType();
+									}
+
+									InventorySlot selSlot = lastFol.Slots[UiData[consoleplayer].FSlotIndex];
+									class<Inventory> itemcls = UiData[consoleplayer].ValidItems[i].GetClass();
+									if (SelSlot && SelSlot.ItemClass == itemcls || !SelSlot && itemcls == (MType ? MType : AType))
+									{
+										UiData[consoleplayer].PSlotIndex = i;
+										break;
+									}
+								}
+							}
+							else if (UiData[consoleplayer].SlotFocused == 1)
+							{
+								int size = UiData[consoleplayer].ValidItems.Size();
+								if (size > 0 && UiData[consoleplayer].PSlotIndex < size)
+								{
+									Inventory item = UiData[consoleplayer].ValidItems[UiData[consoleplayer].PSlotIndex];
+									if (IsValidIndex(item, UiData[consoleplayer].PSlotSubIndex))
+									{
+										if (item is 'HDMagAmmo' || !HDPickup(item) || !HDPickup(item).bMULTIPICKUP)
+										{
+											if (item is 'HDMagAmmo')
+											{
+												SendNetworkEvent('hdf_transfermag:'..item.GetClassName(), UiData[consoleplayer].PSlotSubIndex, UiData[consoleplayer].FSlotIndex);
+											}
+											else
+											{
+												SendNetworkEvent('hdf_transferitem:'..item.GetClassName(), 1, UiData[consoleplayer].FSlotIndex);
+											}
+										}
+										else
+										{
+											UiData[consoleplayer].SlotFocused++;
+										}
+									}
+									UpdateValidItems(consoleplayer, lastFol);
+								}
+								else
+								{
+									UiData[consoleplayer].SlotFocused--;
+								}
+							}
+							else if (UiData[consoleplayer].SlotFocused == 2)
+							{
+								int size = UiData[consoleplayer].ValidItems.Size();
+								if (size > 0 && UiData[consoleplayer].PSlotIndex < size)
+								{
+									Inventory item = UiData[consoleplayer].ValidItems[UiData[consoleplayer].PSlotIndex];
+									SendNetworkEvent('hdf_transferitem:'..item.GetClassName(), UiData[consoleplayer].TransferAmount, UiData[consoleplayer].FSlotIndex);
+									UiData[consoleplayer].SlotFocused = 0;
+								}
+								else
+								{
+									UiData[consoleplayer].SlotFocused = 0;
+								}
+							}
+							ret = true;
+							break;
+						}
+						case InputEvent.Key_Backspace:
+						{
+							if (selSize > 1)
+							{
+								break;
+							}
+							if (lastFol.Slots[UiData[consoleplayer].FSlotIndex] && UiData[consoleplayer].SlotFocused < 2)
+							{
+								SendNetworkEvent("HDF_TakeInvItem", UiData[consoleplayer].FSlotIndex);
+								ret = true;
+							}
+							break;
+						}
+					}
+
+					if (Modifiers[consoleplayer] & OpMod_Ctrl)
+					{
+						if (NumKey > 0 && NumKey <= 10)
+						{
+							SendNetworkEvent("HDF_TryReloadWeapon:"..NumKey);
+						}
+					}
+					else
+					{
+						if (NumKey == 2 && lastFol.CanInteractWith(false))
+						{
+							EnterInputMode(consoleplayer);
+							return true;
+						}
+						if (NumKey == 1)
+						{
+							if (UiData[consoleplayer].SlotFocused > 0)
+							{
+								UiData[consoleplayer].SlotFocused--;
+							}
+							else
+							{
+								SendNetworkEvent("HDF_SetFollowerMenu", FMenu_Main);
+							}
+							ret = true;
+						}
+					}
+					break;
+				}
+
+				// --------------------------------------------------------------------------------
+				//
+				// --------------------------------------------------------------------------------
+
+				case FMenu_Miscellaneous:
+				{
+					if (!(lastFol.bDONTTRANSLATE))
+					{
+						commands.Push(CreateCommand("HDF_SetFollowerMenu", FMenu_ColorPicker));
+					}
+					if (selSize == 1 && lastFol.bCANDISMISS)
+					{
+						if (UiData[consoleplayer].Confirmation)
+						{
+							commands.Push(CreateCommand("HDF_DismissFollower"));
+						}
+						else
+						{
+							commands.Push(CreateCommand("HDF_ToggleConfirmation", true, useUiHandler: true));
+						}
+					}
+					commands.Push(CreateCommand("HDF_SetFollowerMenu", FMenu_Main));
+					break;
+				}
+
+				// --------------------------------------------------------------------------------
+				//
+				// --------------------------------------------------------------------------------
+
+				case FMenu_ColorPicker:
+				{
+					if (e.KeyScan == InputEvent.Key_Enter)
+					{
+						SendNetworkEvent("HDF_ChangeColor", UiData[consoleplayer].SelectedColorIndex);
+						ret = true;
+					}
+					if (NumKey == 10)
+					{
+						SendNetworkEvent("HDF_SetFollowerMenu", FMenu_Main);
+						ret = true;
+					}
+					break;
+				}
+			}
+
+			if (NumKey > 0 && NumKey - 1 < commands.Size())
+			{
+				FollowerCommand cmd = commands[NumKey - 1];
+				if (cmd.useUiHandler)
+				{
+					HandleUiCommand(cmd);
+				}
+				else
+				{
+					SendNetworkEvent(cmd.EventName, cmd.Args[0], cmd.Args[1], cmd.Args[2]);
+				}
+			}
+
+			// [Ace] Block 0-9 keys from affecting the world.
+			if (NumKey >= 0 && NumKey <= 10)
+			{
+				ret = true;
+			}
+
+			if (!(Modifiers[consoleplayer] & OpMod_Shift))
+			{
+				// [Ace] Exit.
+				int Key1, Key2;
+				[Key1, Key2] = Bindings.GetKeysForCommand("HDF_OpenMenu");
+				if (e.KeyScan == Key1 || e.KeyScan == Key2)
+				{
+					SendNetworkEvent("HDF_SetFollowerMenu", FMenu_Closed);
+					ret = true;
+				}
+			}
+			else if (FollowerMenuLevel[consoleplayer] == FMenu_Followers) // [Ace] Used only with the 0-9 keys.
+			{
+				SendNetworkEvent("HDF_OpenMenu");
+			}
+		}
+		return ret;
+	}
+
+	// ----------------------------------------------------------------------
+	//
+	// UI COMMAND HANDLER
+	//
+	// ----------------------------------------------------------------------
+
+	private ui void HandleUiCommand(FollowerCommand cmd)
+	{
+		if (cmd.EventName ~== "HDF_ToggleConfirmation")
+		{
+			UiData[consoleplayer].Confirmation = cmd.Args[0];
+			return;
+		}
+	}
+
+	// ----------------------------------------------------------------------
+	//
+	// NETWORK PROCESS
+	//
+	// ----------------------------------------------------------------------
+
+	override void NetworkProcess(ConsoleEvent e)
+	{
+		let plr = HDPlayerPawn(players[e.Player].mo);
+		string cmd = e.Name.MakeLower();
+		int startIndex = e.Name.IndexOf(":"); // [Ace] We want the args to have their original casing.
+		string rawArgs = startIndex != -1 ? e.Name.Mid(startIndex + 1) : "";
+		Array<string> args;
+		if (rawArgs != "")
+		{
+			rawArgs.Split(args, " ");
+		}
+
+		if (cmd ~== "HDF_ConfirmRecruitment" && !e.IsManual)
+		{
+			CloseFollowerMenu(e.Player);
+			RecruitMarine(SelMarine[e.Player], e.Player);
+			return;
+		}
+
+		if (cmd ~== "HDF_OpenMenu")
+		{
+			FLineTraceData TraceData;
+			plr.LineTrace(plr.angle, HDCONST_ONEMETRE * 20, plr.pitch, TRF_NOSKY, plr.ViewHeight, data: TraceData);
+			Actor ATarget = TraceData.HitActor;
+
+			if (ATarget is 'HDOperator' && ATarget.Health > 0 && TraceData.Distance < HDCONST_ONEMETRE * 2 && !IsPuppet(ATarget) && (ATarget.bFRIENDLY || ATarget.InStateSequence(ATarget.CurState, ATarget.FindState('Falldown')) && HDOperator(ATarget).Stunned > 70))
+			{
+				FollowerMenuLevel[e.Player] = FMenu_Recruitment;
+				SelMarine[e.Player] = HDOperator(ATarget);
+			}
+			else
+			{
+				int FSize = Followers.Size();
+				HDFollower flw = HDFollower(ATarget);
+				if (flw && flw.CanInteractWith() && e.IsManual && CVar.GetCVar('hdf_quickaccess', players[e.Player]).GetBool())
+				{
+					if (FSize > 1 && Modifiers[e.Player] & OpMod_Shift)
+					{
+						ToggleSelection(e.Player, flw);
+						FollowerMenuLevel[e.Player] = FMenu_Followers;
+					}
+					else if (!(Modifiers[e.Player] & OpMod_Shift))
+					{
+						ToggleSelection(e.Player, flw, true);
+						FollowerMenuLevel[e.Player] = FMenu_Main;
+						flw.ChangeLinkedPlayer(plr);
+					}
+				}
+				else if (FSize == 1)
+				{
+					ToggleSelection(e.Player, Followers[0], true);
+					FollowerMenuLevel[e.Player] = FMenu_Main;
+					Followers[0].ChangeLinkedPlayer(plr);
+				}
+				else if (FSize > 0)
+				{
+					FollowerMenuLevel[e.Player] = FMenu_Followers;
+				}
+			}
+			return;
+		}
+
+		// [Ace] Always allow to open the follower menu to the first page or close it.
+		if (cmd ~== "HDF_SetFollowerMenu")
+		{
+			if (e.Args[0] == FMenu_Closed)
+			{
+				CloseFollowerMenu(e.Player);
+				return;
+			}
+
+			FollowerMenuLevel[e.Player] = e.Args[0];
+			return;
+		}
+
+		if (cmd ~== "HDF_InputCommands")
+		{
+			string fullText = "$FLW_CMDINPUTSTITLE";
+			string commandsList[] =
+			{
+				"$FLW_CMDINPUTS1",
+				"$FLW_CMDINPUTS2",
+				"$FLW_CMDINPUTS3",
+				"$FLW_CMDINPUTS4",
+				"$FLW_CMDINPUTS5"
+			};
+			for (int i = 0; i < commandsList.Size(); ++i)
+			{
+				fullText = StringTable.Localize(fullText).."\n"..StringTable.Localize(commandsList[i]);
+			}
+			plr.A_Log(fullText, true);
+			return;
+		}
+
+		if (Followers.Size() == 0)
+		{
+			return;
+		}
+
+		if (cmd.IndexOf("hdf_resetfollower") != -1)
+		{
+			if (args.Size() == 0)
+			{
+				return;
+			}
+
+			for (int i = 0; i < Followers.Size(); ++i)
+			{
+				if (Followers[i].GetTag() ~== args[0])
+				{
+					Followers[i].Reset();
+					break;
+				}
+			}
+			return;
+		}
+
+		if (cmd ~== "HDF_SetModifiers")
+		{
+			switch (e.Args[0])
+			{
+				case 0: Modifiers[e.Player] &= ~e.Args[1]; break;
+				case 1: Modifiers[e.Player] |= e.Args[1]; break;
+			}
+
+			if (CVar.GetCVar('hdf_quickselect', plr.player).GetBool() && Modifiers[e.Player] == 0)
+			{
+				ApplySelection(e.Player);
+			}
+			return;
+		}
+
+		if (cmd ~== "HDF_SetFollowerPage")
+		{
+			switch (e.Args[0])
+			{
+				case 0: FollowerPage[e.Player]--; break;
+				case 1: FollowerPage[e.Player]++; break;
+			}
+			return;
+		}
+
+		if (cmd.IndexOf("hdf_rename") != -1)
+		{
+			if (args.Size() == 0)
+			{
+				return;
+			}
+
+			FLineTraceData data;
+			plr.LineTrace(plr.angle, HDCONST_ONEMETRE * 100, plr.pitch, TRF_SOLIDACTORS | TRF_THRUBLOCK, plr.height - 5, data: data);
+			if (data.HitActor is 'HDFollower')
+			{
+				data.HitActor.SetTag(args[0]);
+			}
+			return;
+		}
+
+		// [Ace] This is an obvious cheat, so don't use it unless you absolutely HAVE to.
+		if (cmd.IndexOf("hdf_warptoplayer") != -1)
+		{
+			if (args.Size() == 0)
+			{
+				return;
+			}
+
+			for (int i = 0; i < Followers.Size(); ++i)
+			{
+				if (Followers[i].GetTag() ~== args[0])
+				{
+					Followers[i].WarpToPlayer();
+					break;
+				}
+			}
+			return;
+		}
+
+		if (cmd ~== "HDF_ApplySelection")
+		{
+			ApplySelection(e.Player);
+			return;
+		}
+
+		if (cmd ~== "HDF_ToggleSelection")
+		{
+			// [Ace] Select only that follower.
+			if (e.Args[1])
+			{
+				Selection[e.Player].SelFollowers.Clear();
+			}
+			ToggleSelection(e.Player, Followers[e.Args[0]], true);
+			return;
+		}
+
+		if (cmd ~== "HDF_ManipulateSelection")
+		{
+			switch (e.Args[0])
+			{
+				case 0:
+				{
+					SelectAll(e.Player, e.Args[1], false);
+					return;
+				}
+				case 1:
+				{
+					SelectAll(e.Player, e.Args[1], true);
+					return;
+				}
+				case 2:
+				{
+					DeselectAll(e.Player, e.Args[1]);
+					return;
+				}
+				case 3:
+				{
+					SelectSquad(e.Player, e.Args[1]);
+					return;
+				}
+			}
+		}
+
+		if (cmd ~== "HDF_AssignSquad")
+		{
+			for (int i = 0; i < Selection[e.Player].SelFollowers.Size(); ++i)
+			{
+				let flw = Selection[e.Player].SelFollowers[i];
+				if (flw)
+				{
+					flw.Squad = e.Args[0] == 10 ? 0 : e.Args[0];
+				}
+			}
+			return;
+		}
+
+		// [Ace] Do not allow the commands below to be used from the console.
+		// It used to be that you could, but with the advent of multiple followers, shortcuts are, unfortunately, no longer possible.
+		// Not without overengineering the code by passing the follower index or name to it, which gets reaaaally complicated
+		// if multiple followers share the same name, which can totally be done with HDF_RenameFollower. So yeah. Ain't happening.
+		HDFollower lastFol = Selection[e.Player].GetLast();
+		if (!lastFol || !lastFol.CanInteractWith() || e.IsManual)
+		{
+			return;
+		}
+
+		if (cmd ~== "HDF_DismissFollower")
+		{
+			lastFol.Dismiss();
+			CloseFollowerMenu(e.Player);
+			return;
+		}
+
+		// [Ace] These commands cannot be used if alive and hostile.
+		if (cmd ~== "HDF_CarryFollower")
+		{
+			if (lastFol.PackFollower())
+			{
+				CloseFollowerMenu(e.Player);
+			}
+			return;
+		}
+
+		if (cmd ~== "HDF_TryRevive")
+		{
+			if (lastFol.TryRevive(e.Args[0]))
+			{
+				CloseFollowerMenu(e.Player);
+			}
+			return;
+		}
+
+		if (cmd.IndexOf("hdf_wearablecommand") != -1)
+		{
+		
+			static const Name worldItemClasses[] = { 'HDArmour', 'PortableRadsuit', 'HDBackpack', 'HDPersonalShieldGenerator' };
+			static const Name wornItemClasses[] = { 'HDArmourWorn', 'WornRadsuit', 'HDBackpack', 'HDPersonalShieldGenerator' };
+			static const string languagePrefixex[] = { "ARMORGIVE", "RADSUITGIVE", "BACKPACKGIVE", "PSGGIVE" };
+			static const string soundPrefixes[] = { "ArmorGive", "RadsuitGive", "BackpackGive", "PSGGive" };
+
+			lastFol.WearableInfo.WorldItemCls = worldItemClasses[e.Args[0]];
+			lastFol.WearableInfo.WornItemCls = wornItemClasses[e.Args[0]];
+			lastFol.WearableInfo.LanguagePrefix = languagePrefixex[e.Args[0]];
+			lastFol.WearableInfo.SoundPrefix = soundPrefixes[e.Args[0]];
+
+			if (HasOption("d", args))
+			{
+				lastFol.DropWearable();
+				return;
+			}
+			lastFol.TryUseWearable();
+			return;
+		}
+
+		if (cmd ~== "HDF_TryWeapon")
+		{
+			lastFol.TryUseWeapon();
+			return;
+		}
+
+		if (cmd ~== "HDF_ChangeOrders")
+		{
+			int size = Selection[e.Player].SelFollowers.Size();
+			bool result = false;
+			for (int i = 0; i < size; ++i)
+			{
+				result = Selection[e.Player].SelFollowers[i].ChangeOrders(e.Args[0], size > 1 ? HDFollower.COF_MULTI : 0);
+			}
+			if (!(Modifiers[e.Player] & OpMod_Shift) && (result || size > 1))
+			{
+				CloseFollowerMenu(e.Player);
+			}
+			return;
+		}
+
+		if (cmd ~== "HDF_ChangeStance")
+		{
+			int size = Selection[e.Player].SelFollowers.Size();
+			for (int i = 0; i < size; ++i)
+			{
+				Selection[e.Player].SelFollowers[i].ChangeStance(e.Args[0]);
+			}
+			CloseFollowerMenu(e.Player);
+			return;
+		}
+
+		if (cmd.IndexOf("hdf_tryreloadweapon") != -1)
+		{
+			int selSize = Selection[e.Player].SelFollowers.Size();
+			
+			int argSize = args.Size();
+			bool dropMag = HasOption("d", args);
+			if ((argSize == 0 || dropMag) && selSize == 1 && lastFol.Weapons.Size() == 1 && lastFol.CanInteractWith(false))
+			{
+				int relFlags = 0;
+				if (dropMag)
+				{
+					relFlags |= HDFollower.RLF_DROPMAG;
+				}
+				lastFol.TryReloadWeapon(lastFol.Weapons[0], HDFollower.RLF_MANUAL | relFlags);
+			}
+			if (argSize > 0)
+			{
+				for (int i = 0; i < selSize; ++i)
+				{
+					let flw = Selection[e.Player].SelFollowers[i];
+					int wSize = flw.Weapons.Size();
+					if (!flw.CanInteractWith(false) || wSize == 0)
+					{
+						continue;
+					}
+
+					int relFlags = 0;
+					if (dropMag)
+					{
+						relFlags |= HDFollower.RLF_DROPMAG;
+					}
+
+					if (selSize == 1)
+					{
+						int index = args[0].ToInt();
+						if (index > 0 && index <= wSize)
+						{
+							flw.TryReloadWeapon(flw.Weapons[index - 1], HDFollower.RLF_MANUAL | relFlags);
+							continue;
+						}
+					}
+					
+					flw.TryReloadWeapon(flw.FindWeaponByName(args[0]), HDFollower.RLF_MANUAL | relFlags);
+				}
+			}
+			return;
+		}
+
+		if (cmd.IndexOf('hdf_swapweapon') != -1)
+		{
+			if (lastFol.Weapons.Size() < 2 || args.Size() < 2) // [Ace] Swap what exactly?
+			{
+				return;
+			}
+			int wep1 = args[0].ToInt();
+			int wep2 = args[1].ToInt();
+
+			if (wep1 == 0 || wep2 == 0 || wep1 == wep2 || max(wep1, wep2) > lastFol.Weapons.Size())
+			{
+				return;
+			}
+
+			let temp = lastFol.Weapons[wep1 - 1];
+			lastFol.Weapons[wep1 - 1] = lastFol.Weapons[wep2 - 1];
+			lastFol.Weapons[wep2 - 1] = temp;
+		}
+
+		if (cmd.IndexOf("hdf_removeweapon") != -1)
+		{
+			if (args.Size() > 0)
+			{
+				int selSize = Selection[e.Player].SelFollowers.Size();
+				for (int i = 0; i < selSize; ++i)
+				{
+					let flw = Selection[e.Player].SelFollowers[i];
+					int wSize = flw.Weapons.Size();
+					if (!flw.CanInteractWith(false) || wSize == 0)
+					{
+						continue;
+					}
+
+					if (selSize == 1)
+					{
+						int index = args[0].ToInt();
+						if (index > 0 && index <= wSize)
+						{
+							flw.Weapons[index - 1].EmptyWeapon();
+							flw.Weapons[index - 1].Destroy();
+							flw.Weapons.Delete(index - 1);
+							continue;
+						}
+					}
+
+					let wpn = flw.FindWeaponByName(args[0]);
+					if (!wpn)
+					{
+						continue;
+					}
+					int index = flw.Weapons.Find(wpn);
+					wpn.EmptyWeapon();
+					wpn.Destroy();
+					flw.Weapons.Delete(index);
+				}
+			}
+			return;
+		}
+
+		if (cmd.IndexOf("hdf_transfermag") != -1)
+		{
+			HDMagAmmo item = HDMagAmmo(players[e.Player].mo.FindInventory(args[0]));
+			if (item)
+			{
+				lastFol.AddMag(item, e.Args[0], e.Args[1]);
+			}
+			return;
+		}
+
+		if (cmd.IndexOf("hdf_transferitem") != -1)
+		{
+			Inventory item = players[e.Player].mo.FindInventory(args[0]);
+			if (item)
+			{
+				lastFol.AddItem(item, e.Args[0], slot: e.Args[1]);
+			}
+			return;
+		}
+
+		if (cmd ~== "HDF_TakeInvItem")
+		{
+			lastFol.TakeInvItem(lastFol.Slots[e.Args[0]]);
+			return;
+		}
+
+		if (cmd ~== "HDF_ChangeColor")
+		{
+			for (int i = 0; i < Selection[e.Player].SelFollowers.Size(); ++i)
+			{
+				let flw = Selection[e.Player].SelFollowers[i];
+				if (flw.CanInteractWith() && !(flw.bDONTTRANSLATE))
+				{
+					flw.A_SetTranslation("FollowerTranslation"..e.Args[0]);
+				}
+			}
+			return;
+		}
+	}
+
+	// ----------------------------------------------------------------------
+	//
+	// MISCELLANEOUS HELPER FUNCTIONS
+	//
+	// ----------------------------------------------------------------------
+
+	private ui void ProcessInputString(string input, bool multiselect)
+	{
+		Name cmd = input.Left(3);
+		string args = input.Mid(4);
+
+		if (!multiselect)
+		{
+			switch (cmd)
+			{
+				case 'wpn':
+				{
+					SendNetworkEvent("HDF_TryWeapon");
+					break;
+				}
+				case 'arm':
+				{
+					SendNetworkEvent("HDF_WearableCommand:"..args, 0);
+					break;
+				}
+				case 'rad':
+				{
+					SendNetworkEvent("HDF_WearableCommand:"..args, 1);
+					break;
+				}
+				case 'bak':
+				{
+					SendNetworkEvent("HDF_WearableCommand:"..args, 2);
+					break;
+				}
+				case 'psg':
+				{
+					SendNetworkEvent("HDF_WearableCommand:"..args, 3);
+					break;
+				}
+				case 'swp':
+				{
+					// [Ace] 4 for mid because the format is "cmd arg1 arg2 arg3", so instead of passing the whitespace as well, omit it.
+					// And if the character is not a whitepsace, u dun goofed.
+					if (input.Length() > 3)
+					{
+						SendNetworkEvent("HDF_SwapWeapon:"..args);
+					}
+					break;
+				}
+			}
+		}
+
+		switch (cmd)
+		{
+			case 'rld':
+			case 'rel':
+			{
+				SendNetworkEvent("HDF_TryReloadWeapon:"..args);
+				break;
+			}
+			case 'rmv':
+			{
+				if (input.Length() > 3)
+				{
+					SendNetworkEvent("HDF_RemoveWeapon:"..args);
+				}
+				break;
+			}
+		}
+
+		int cSize = UiData[consoleplayer].LastCommands.Size();
+		if (input != "" && (cSize == 0 || input != UiData[consoleplayer].LastCommands[cSize - 1]))
+		{
+			UiData[consoleplayer].LastCommands.Push(input);
+		}
+	}
+
+	private bool HasOption(string opt, out Array<string> args)
+	{
+		for (int i = 0; i < args.Size(); ++i)
+		{
+			if (args[i] ~== opt)
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+
+	// [Ace] The only reason this is used is to allow dynamic menus with a variable number of options. That's literally the only reason.
+	private ui FollowerCommand CreateCommand(string evName, int arg1 = 0, int arg2 = 0, int arg3 = 0, bool useUiHandler = false)
+	{
+		let Command = new('FollowerCommand');
+		Command.EventName = evName;
+		Command.Args[0] = arg1;
+		Command.Args[1] = arg2;
+		Command.Args[2] = arg3;
+		Command.UseUiHandler = useUiHandler;
+		return Command;
+	}
+
+	private ui void UpdateValidItems(int plrNum, HDFollower flw)
+	{
+		UiData[plrNum].ValidItems.Clear();
+		Actor plr = players[plrNum].mo;
+		for (Inventory next = plr.Inv; next; next = Next.Inv)
+		{
+			if (next && flw.IsValidItem(next.GetClass()))
+			{
+				UiData[plrNum].ValidItems.Push(next);
+			}
+		}
+	}
+
+	private ui Color GetPercentColor(double percent)
+	{
+		if (percent >= 0.75)
+		{
+			return Color(192, 0, 224, 0);
+		}	
+		else if (percent >= 0.50)
+		{
+			return Color(192, 255, 255, 0);
+		}
+		else if (percent >= 0.25)
+		{
+			return Color(192, 255, 128, 0);
+		}
+		else
+		{
+			return Color(192, 255, 0, 0);
+		}
+	}
+
+	private ui string GetTruncatedText(string text, int length)
+	{
+		if (text.Length() > length)
+		{
+			string TruncatedName = text.Mid(0, length);
+			TruncatedName.DeleteLastCharacter();
+			TruncatedName.DeleteLastCharacter();
+			TruncatedName.DeleteLastCharacter();
+			if (TruncatedName.ByteAt(TruncatedName.Length() - 1) == 32)
+			{
+				TruncatedName.DeleteLastCharacter();
+			}
+			text = TruncatedName.."...";
+		}
+
+		return text;
+	}
+
+	private ui bool IsValidIndex(Inventory item, int index)
+	{
+		if (HDMagAmmo(item))
+		{
+			int mSize = HDMagAmmo(item).Mags.Size();
+			return mSize > 0 && index < mSize;
+		}
+		if (HDPickup(item) && HDPickup(item).bMULTIPICKUP)
+		{
+			return item.Amount > 0 && index == 0;
+		}
+		else
+		{
+			return item.Amount > 0 && index < item.Amount;
+		}
+	}
+
+	private ui void EnterInputMode(int plrNum)
+	{
+		UiData[plrNum].LastCommandShift = 0;
+		InputString[plrNum] = "";
+		InInputMode[plrNum] = true;
+	}
+
+	private void CloseFollowerMenu(int plrNum)
+	{
+		Selection[plrNum].SelFollowers.Clear();
+		FollowerMenuLevel[plrNum] = FMenu_Closed;
+	}
+
+	private void ApplySelection(int plrNum)
+	{
+		if (FollowerMenuLevel[plrNum] != FMenu_Followers)
+		{
+			return;
+		}
+		
+		int size = Selection[plrNum].SelFollowers.Size();
+		if (size == 0)
+		{
+			return;
+		}
+
+		FollowerMenuLevel[plrNum] = FMenu_Main;
+		for (int i = 0; i < size; ++i)
+		{
+			Selection[plrNum].SelFollowers[i].ChangeLinkedPlayer(HDPlayerPawn(players[plrNum].mo));
+		}
+	}
+
+	private void DeselectAll(int plrNum, int page)
+	{
+		if (page > -1)
+		{
+			for (int i = FollowersPerPage * page; i < min(FollowersPerPage * (page + 1), Followers.Size()); ++i)
+			{
+				if (Selection[plrNum].SelFollowers.Find(Followers[i]) != Selection[plrNum].SelFollowers.Size())
+				{
+					ToggleSelection(plrNum, Followers[i]);
+				}
+			}
+		}
+		else
+		{
+			Selection[plrNum].SelFollowers.Clear();
+		}
+	}
+
+	private void SelectAll(int plrNum, int page, bool invert)
+	{
+		if (!invert)
+		{
+			DeselectAll(plrNum, page);
+		}
+		if (page > -1)
+		{
+			for (int i = FollowersPerPage * page; i < min(FollowersPerPage * (page + 1), Followers.Size()); ++i)
+			{
+				ToggleSelection(plrNum, Followers[i]);
+			}
+		}
+		else
+		{
+			for (int i = 0; i < Followers.Size(); ++i)
+			{
+				ToggleSelection(plrNum, Followers[i]);
+			}
+		}
+	}
+
+	private void SelectSquad(int plrNum, int squad)
+	{
+		for (int i = 0; i < Followers.Size(); ++i)
+		{
+			if (Followers[i].Squad == squad)
+			{
+				ToggleSelection(plrNum, Followers[i]);
+			}
+		}
+	}
+
+	private void ToggleSelection(int plrNum, HDFollower flw, bool allowDead = false)
+	{
+		if (flw.CanInteractWith(allowDead))
+		{
+			int FoundIndex = Selection[plrNum].SelFollowers.Find(flw);
+			if (FoundIndex == Selection[plrNum].SelFollowers.Size())
+			{
+				Selection[plrNum].SelFollowers.Push(flw);
+			}
+			else
+			{
+				Selection[plrNum].SelFollowers.Delete(FoundIndex);
+			}
+		}
+	}
+}

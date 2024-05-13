@@ -1,0 +1,120 @@
+extend class HDFollower
+{
+	protected void CheckIncap()
+	{
+		if (Stunned > 25 && Distance3D(LinkedPlayer) < radius + MaxReviveDistance && IsFacedByPlayer() && PlayerIsCrouching())
+		{
+			Stunned -= 40;
+		}
+		A_KnockedDown();
+	}
+
+	protected void FinishRaise()
+	{
+		ThinkerIterator it = ThinkerIterator.Create('AngelFire', STAT_DEFAULT);
+		AngelFire f;
+		while ((f = AngelFire(it.Next())))
+		{
+			if (f.master && f.master == self)
+			{
+				f.Destroy();
+				break;
+			}
+		}
+
+		MaxStepHeight = default.MaxStepHeight;
+		Status = FStatus_None;
+	}
+
+	protected void OnDeath()
+	{
+		ClearGoal();
+		ClearTarget();
+		IdleWeapon();
+		Status = FStatus_InactiveOrDead;
+		scale = default.scale;
+		CrouchFactor = 0;
+	}
+
+	protected void OnFalldown()
+	{
+		OnDeath();
+		MaxStepHeight = 0; // [Ace] Prevents you from sombrero-ing the follower if you stand over them while they're incapped.
+		A_SetSize(-1, deathheight);
+		A_Vocalize(PainSound);
+	}
+
+	States
+	{
+		Spawn:
+			#### A 1;
+			Goto Idle;
+
+		Moving:
+			#### CDEF 8;
+			Loop;
+		Idle:
+			#### A 5;
+			#### A 30 TryActivateLine();
+			#### B 35;
+			Loop;
+
+		Pain:
+		Pain.Melee:
+			#### G 6
+			{
+				Status = FStatus_InactiveOrDead;
+				A_GiveInventory("HDFireDouse", 20);
+				A_Vocalize(PainSound, CHANF_NOSTOP);
+			}
+			#### # 0
+			{
+				Status = FStatus_None;
+			}
+			Goto Idle;
+		Pain.Staples:
+			#### # 6
+			{
+				Status = FStatus_InactiveOrDead; 
+				A_Vocalize(PainSound, CHANF_NOSTOP);
+			}
+			#### # 0
+			{
+				Status = FStatus_None;
+			}
+			Goto Idle;
+
+		Falldown:
+			#### M 4 OnFalldown();
+			#### N 4 A_Vocalize(DeathSound);
+			#### O 4;
+			#### PQ 4;
+			#### Q 10 CheckIncap();
+			Wait;
+
+		Standup:
+			Goto Raise + 1; // [Ace] Don't reset body damage if standing up from incap.
+
+		// [Ace] Raise is entered if not explicitly resurrected by the player.
+		// It is important that it exists. To add custom animations for manual resurrections, use Raise.Blood, Raise.Blues, or Raise.Merchant.
+		// Note that all Raise states must call OnRevive or else your follower will crumble into dust after a few deaths from all the accumulated bodydamage.
+		Raise:
+			#### Q 7 OnRevive();
+			#### QQP 6;
+			#### O 6 A_Recoil(-0.3);
+			#### N 6;
+			#### M 6 PlayIdleComment();
+			#### A 0 FinishRaise();
+			Goto Idle;
+
+		Death:
+			#### M 9 OnDeath();
+			#### N 6 A_Vocalize(DeathSound);
+			#### O 5;
+			#### PQR 4;
+			Goto Dead;
+		Dead:
+			#### R 1 CanRaise CheckRevive();
+			Wait;
+	}
+}

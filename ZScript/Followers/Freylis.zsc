@@ -1,0 +1,36 @@
+class FollowerFreylis : HDFollower
+{
+	override void GiveStartingItems(string input)
+	{
+		Super.GiveStartingItems(hdf_loadout_freylis);
+	}
+
+	Default
+	{
+		SeeSound "Follower/Freylis/See";
+		PainSound "Follower/Freylis/Pain";
+		DeathSound "Follower/Freylis/Death";
+		Tag "$TAG_FREYLIS";
+		HDFollower.UnLocalizeTag "Freylis";
+		HDFollower.FollowerInfo GENDER_FEMALE, 'FollowerBodyFreylis', 'LeftBehindFreylis';
+		XScale 1.06;
+	}
+
+	States
+	{
+		Spawn:
+			FLW1 A 0;
+			Goto Super::Spawn;
+	}
+}
+
+class LeftBehindFreylis : LeftBehindFollower {}
+
+class FollowerBodyFreylis : FollowerBody
+{
+	Default
+	{
+		Inventory.Icon "FOLLA0";
+		Tag "$TAG_FREYLIS";
+	}
+}

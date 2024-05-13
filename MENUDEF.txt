@@ -1,0 +1,155 @@
+OptionMenu "HDFollowerMenu"
+{
+	Title "$FLW_OPTNSTITLE"
+	
+	Control "$FLW_OPTNSCOMMNDCONTROL", "HDF_OpenMenu"
+	StaticText ""
+	
+	StaticText "$FLW_OPTNSTITLE2", "Teal"
+	Option "$FLW_OPTNSOHANAOPT", "hdf_ohana", "OnOff"
+	StaticText "$FLW_OPTNSOHANADESC1", "White"
+	StaticText "$FLW_OPTNSOHANADESC2", "White"
+	StaticText "$FLW_OPTNSOHANADESC3", "White"
+	StaticText ""
+	Option "$FLW_OPTNSBRASSOPT", "hdf_collectbrass", "YesNo"
+	StaticText ""
+	Option "$FLW_OPTNSUNCOUNTOPT", "hdf_targetuncountable", "YesNo"
+	StaticText "$FLW_OPTNSUNCOUNTDESC1", "White"
+	StaticText "$FLW_OPTNSUNCOUNTDESC2", "White"
+	StaticText "$FLW_OPTNSUNCOUNTDESC3", "White"
+	StaticText ""
+	ScaleSlider "$FLW_OPTNSTARGRANGEOPT", "hdf_maxrange", 0, 300, 5, "Default"
+	StaticText "$FLW_OPTNSDESC1", "White"
+	StaticText "$FLW_OPTNSDESC2", "White"
+	StaticText ""
+	Option "$FLW_OPTNSAUTOPLACEOPT", "hdf_droponstart", "YesNo"
+	StaticText "$FLW_OPTNSAUTOPLACEDESC1", "White"
+	StaticText "$FLW_OPTNSAUTOPLACEDESC2", "White"
+	StaticText ""
+	Option "$FLW_OPTNSQUICKACCESSOPT", "hdf_quickaccess", "OnOff"
+	StaticText "$FLW_OPTNSQUICKACCESSDESC", "White"
+	StaticText ""
+	Option "$FLW_OPTNSQUICKSELOPT", "hdf_quickselect", "OnOff"
+	StaticText "$FLW_OPTNSQUICKSELDESC", "White"
+	StaticText ""
+	//Option "$HDFOPT_NOTRIGGER", "hdf_NoTrigger", "OnOff"
+	//StaticText "$HDFOPTDESC_NOTRIGGER", "White"
+	//StaticText ""
+
+	StaticText "$FLW_OPTNSFLWTITLE", "Teal"
+	Submenu "$TAG_Freylis", "HDFollowerMenuFreylis"
+	Submenu "$TAG_Balthazar", "HDFollowerMenuBalthazar"
+	Submenu "$TAG_Valnos", "HDFollowerMenuValnos"
+	Submenu "$TAG_Daina", "HDFollowerMenuDaina"
+	Submenu "$TAG_Sewie", "HDFollowerMenuSewie"
+	Submenu "$TAG_Nari", "HDFollowerMenuNari"
+	StaticText ""
+	Submenu "$FLW_OPTNSCSTMFLW", "HDFollowerMenuCustom"
+	StaticText ""
+
+	StaticText "$FLW_OPTNSVISUALTITLE", "Teal"
+	Slider "$FLW_OPTNSUISCALEOPT", "hdf_uiscale", 0.1, 3.0, 0.1, 1
+	ColorPicker "$FLW_OPTNSUICOLOPT", "hdf_uicolor"
+	StaticText ""
+	Option "$FLW_OPTNSCHATOPT", "hdf_printlevel_chat", "PrintLevel"
+	Option "$FLW_OPTNSVOICEOPT", "hdf_printlevel_voice", "PrintLevel"
+	StaticText ""
+	Option "$FLW_OPTNSIDLECOMOPT", "hdf_enablecomments", "YesNo"
+	StaticText "$FLW_OPTNSIDLECOMDESC1", "White"
+	StaticText "$FLW_OPTNSIDLECOMDESC2", "White"
+	StaticText ""
+}
+
+OptionMenu "HDFollowerMenuFreylis"
+{
+	Title "$FLW_OPTNSLOADOUTFREYLIS"
+
+	FlagOption "$FLW_OPTNSENABLEED", "hdf_followers", "YesNo", 0
+	StaticText ""
+	SafeCommand "$FLW_OPTNSTELEPORTTOPLAYER", "HDF_WarpFreylisToPlayer"
+	SafeCommand "$FLW_OPTNSRESETFLW", "HDF_ResetFreylis"
+	StaticText ""
+	TextField "$FLW_OPTNSLOADOUT", "hdf_loadout_freylis"
+}
+
+OptionMenu "HDFollowerMenuBalthazar"
+{
+	Title "$FLW_OPTNSLOADOUTBALTHAZAR"
+
+	FlagOption "$FLW_OPTNSENABLEED", "hdf_followers", "YesNo", 1
+	StaticText ""
+	SafeCommand "$FLW_OPTNSTELEPORTTOPLAYER", "HDF_WarpBalthazarToPlayer"
+	SafeCommand "$FLW_OPTNSRESETFLW", "HDF_ResetBalthazar"
+	StaticText ""
+	TextField "$FLW_OPTNSLOADOUT", "hdf_loadout_balthazar"
+}
+
+OptionMenu "HDFollowerMenuValnos"
+{
+	Title "$FLW_OPTNSLOADOUTVALNOS"
+
+	FlagOption "$FLW_OPTNSENABLEED", "hdf_followers", "YesNo", 2
+	StaticText ""
+	SafeCommand "$FLW_OPTNSTELEPORTTOPLAYER", "HDF_WarpValnosToPlayer"
+	SafeCommand "$FLW_OPTNSRESETFLW", "HDF_ResetValnos"
+	StaticText ""
+	TextField "$FLW_OPTNSLOADOUT", "hdf_loadout_valnos"
+}
+
+OptionMenu "HDFollowerMenuDaina"
+{
+	Title "$FLW_OPTNSLOADOUTDAINA"
+
+	FlagOption "$FLW_OPTNSENABLEED", "hdf_followers", "YesNo", 3
+	StaticText ""
+	SafeCommand "$FLW_OPTNSTELEPORTTOPLAYER", "HDF_WarpDainaToPlayer"
+	SafeCommand "$FLW_OPTNSRESETFLW", "HDF_ResetDaina"
+	StaticText ""
+	TextField "$FLW_OPTNSLOADOUT", "hdf_loadout_daina"
+}
+
+OptionMenu "HDFollowerMenuSewie"
+{
+	Title "$FLW_OPTNSLOADOUTSEWIE"
+
+	FlagOption "$FLW_OPTNSENABLEED", "hdf_followers", "YesNo", 4
+	StaticText ""
+	SafeCommand "$FLW_OPTNSTELEPORTTOPLAYER", "HDF_WarpSewieToPlayer"
+	SafeCommand "$FLW_OPTNSRESETFLW", "HDF_ResetSewie"
+	StaticText ""
+	TextField "$FLW_OPTNSLOADOUT", "hdf_loadout_sewie"
+}
+
+OptionMenu "HDFollowerMenuNari"
+{
+	Title "$FLW_OPTNSLOADOUTNARI"
+
+	FlagOption "$FLW_OPTNSENABLEED", "hdf_followers", "YesNo", 5
+	StaticText ""
+	SafeCommand "$FLW_OPTNSTELEPORTTOPLAYER", "HDF_WarpNariToPlayer"
+	SafeCommand "$FLW_OPTNSRESETFLW", "HDF_ResetNari"
+	StaticText ""
+	TextField "$FLW_OPTNSLOADOUT", "hdf_loadout_nari"
+}
+
+OptionMenu "HDFollowerMenuCustom"
+{
+	Title "$FLW_OPTNSCUSTOMTITLE"
+
+	StaticText "$FLW_OPTNSCUSTOMDESC1"
+	StaticText "$FLW_OPTNSCUSTOMDESC2"
+	StaticText "$FLW_OPTNSAVAILABLEFLW", "Teal"
+}
+
+AddOptionMenu "OptionsMenu"
+{
+	Submenu "$FLW_MENUTITLE", "HDFollowerMenu"
+}
+
+OptionValue "PrintLevel"
+{
+	0, "$FLW_OPTNSPRINTLVL1"
+	1, "$FLW_OPTNSPRINTLVL2"
+	2, "$FLW_OPTNSPRINTLVL3"
+	3, "$FLW_OPTNSPRINTLVL4"
+}
