@@ -117,7 +117,7 @@ class FW_ZM66 : FollowerWeapon
 			Owner.A_DropItem('HDRocketAmmo', 1);
 		}
 		
-		nogl = wpn.WeaponStatus[ZM66S_FLAGS] & ZM66F_GLMODE? 1 : 0;
+		nogl = wpn.WeaponStatus[ZM66S_FLAGS] & ZM66F_NOLAUNCHER? 1 : 0;
 		noauto = wpn.WeaponStatus[ZM66S_FLAGS] & ZM66F_NOFIRESELECT? 1 : 0;
 		Crossdot = wpn.weaponstatus[ZM66S_DOT];
 	}
@@ -129,8 +129,8 @@ class FW_ZM66 : FollowerWeapon
 		if(ChamberedRound > 0)wpn.weaponstatus[ZM66S_FLAGS]|=ZM66F_CHAMBER;
 		else wpn.weaponstatus[ZM66S_FLAGS]&=~ZM66F_CHAMBER;
 		
-		if(nogl>0)wpn.WeaponStatus[ZM66S_FLAGS]|=ZM66F_GLMODE;
-		else wpn.WeaponStatus[ZM66S_FLAGS]&=~ZM66F_GLMODE;
+		if(nogl>0)wpn.WeaponStatus[ZM66S_FLAGS]|=ZM66F_NOLAUNCHER;
+		else wpn.WeaponStatus[ZM66S_FLAGS]&=~ZM66F_NOLAUNCHER;
 		
 		if(noauto>0)wpn.WeaponStatus[ZM66S_FLAGS]|=ZM66F_NOFIRESELECT;
 		else wpn.WeaponStatus[ZM66S_FLAGS]&=~ZM66F_NOFIRESELECT;
