@@ -1,37 +1,22 @@
 Original mod by Ace: https://gitlab.com/accensi/hd-addons/follower
 
-### This is a fixed and improved version.
-- Code fixes and improves by mickromash
-- Additional testing and new followers lines by Faxer
-
+This is a fixed and improved version by mickromash.
 
 ### Changes
 ---
 - Mod updated to Hideous Destructor v4.11.3d
 - Followers now targeting small monsters (like Lost Soul or Babuin) much better
-- Followers reloading their weapons and healing themselves between battles
+- Followers reloading their weapons and healing between battles
 - Followers now trying to follow player through portals
-- Followers now tell player if they are lagging behind ("MissedPlayer" For audio) (FollowersName.."_FOLLOW_MISS_"..Index for message in language file)
+- Followers now tell player if they are lagging behind ("MissedPlayer" For audio)(FollowersName.."_FOLLOW_MISS_"..Index for message in language file ())
 - Followers now actually picking up armour (was broken in 4.8.2a fix)
 - Fixed liberator mags
 - Fixed followers aim
-- Fixed followers not healing themselves on 90% health or 0.1 body damage
+- Fixed followers not healing themselfs on 90% health or 0.1 boddy damage
 - Localized all text that I could find
 
-14.05
-- Amount of items given to follower is now entered with numbers
-- Fixed no ammo messages not appear
 
----
-- Requires newest version of [AceCoreLib](https://github.com/HDest-Community/AceCoreLib).
-
-
-
----
-### ORIGINAL REAMDE
----
-
-
+----------------------------- Original Readme ----------------------------------
 
 ### Important
 ---
