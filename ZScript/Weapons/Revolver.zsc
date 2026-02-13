@@ -1,0 +1,170 @@
+class FW_Revolver : FollowerWeapon
+{
+	int Casings, NineMil, NMCasings;
+	override string GetName() { return "Revolver"; }
+	override string GetIcon() { return "REVLA0"; }
+	override class<HDAmmo>, class<HDMagAmmo>, int GetAmmoType() { return 'HDRevolverAmmo', null, 6; }
+	override Name GetRealWeapon() { return 'HDRevolver'; }
+
+	override FireSequenceResult DoFiringSequence(out int ticker, Actor trgt)
+	{
+		switch (ticker) {
+			case 0: {
+				Owner.A_StartSound("weapons/deinocyl",CHAN_WEAPON);
+			}
+			case 4: {
+			
+				if (Mag < 1)
+					{
+					return FSResult_End;
+					}
+
+				TryChamberRound();
+
+				Owner.tics++;
+				Owner.frame++; // [Ace] Muzzle flash frame.
+				Owner.A_StartSound("weapons/deinoblast1",CHAN_WEAPON,CHANF_OVERLAP,0.5);
+				Owner.A_StartSound("weapons/deinoblast2",CHAN_WEAPON,CHANF_OVERLAP,0.4);
+				HDBulletActor.FireBullet(Owner, "HDB_355", Owner.GunHeight, speedfactor: frandom(0.97,1.03) );
+				ChamberedRound = CRType_Empty;
+				Casings++;
+				break;
+			}
+			case 8:
+			{
+				ticker = -1;
+				break;
+			}
+		}
+		return FSResult_None;
+	}
+	override bool DoReloadSequence(out int ticker)
+	{
+		switch (ticker)
+		{
+			case 1:
+			{
+				Owner.A_StartSound("weapons/deinoopen", 8);
+			}
+			case 4:
+			{
+				Owner.A_StartSound("weapons/deinoeject", 8);
+				for (int i = Casings; i > 0; i--)
+				{
+					Owner.A_SpawnItemEx("HDSpent355", cos(Owner.pitch) * 4, 0, Owner.height - 10 - sin(Owner.pitch) * 4, Owner.vel.x, Owner.vel.y, Owner.vel.z + frandom(2, 3), frandom(-1, 1), SXF_ABSOLUTEMOMENTUM | SXF_NOCHECKPOSITION | SXF_TRANSFERPITCH );
+				}
+				for (int i = NineMil; i > 0; i--)
+				{
+					Owner.A_DropItem('HDPistolAmmo');
+				}
+				for (int i = NMCasings; i > 0; i--)
+				{
+					Owner.A_SpawnItemEx("HDSpent9mm", cos(Owner.pitch) * 4, 0, Owner.height - 10 - sin(Owner.pitch) * 4, Owner.vel.x, Owner.vel.y, Owner.vel.z + frandom(2, 3), frandom(-1, 1), SXF_ABSOLUTEMOMENTUM | SXF_NOCHECKPOSITION | SXF_TRANSFERPITCH );
+				}
+				Casings = 0;
+				NineMil = 0;
+				NMCasings = 0;
+				break;
+			}
+			case 22:
+			{
+				if (TryReload() == RResult_CanReload)
+				{
+					Owner.A_StartSound("weapons/deinoload", 9, CHANF_OVERLAP);
+					ticker = 17;
+				}
+				break;
+			}
+			case 26:
+			{
+				Owner.A_StartSound("weapons/deinoclose", 8);
+			}
+			case 27:
+			{
+				return FSResult_End;
+			}
+		}
+		return FSResult_None;
+	}
+	override int AssessPriority(Actor trgt, int shields, bool multitarget)
+	{
+		if (trgt is 'PlayerPawn')
+		{
+			return WPriority_VeryLow;
+		}
+		if (trgt.bBOSS || trgt is 'PainLord')
+		{
+			return WPriority_Lowest;
+		}
+		if (trgt is 'Necromancer' && !multitarget)
+		{
+			return WPriority_VeryLow;
+		}
+		if (trgt is 'PainBringer' || shields > 300)
+		{
+			return WPriority_Medium;
+		}
+		return WPriority_Lowest;
+	}
+
+	override void OnTransfer(HDWeapon wpn)
+	{
+		ChamberedRound = CRType_Empty;
+		for (int i = BUGS_CYL1; i <= BUGS_CYL6; i++)
+		{
+			int ThisChamber=wpn.WeaponStatus[i];
+			switch (ThisChamber)
+			{
+				case 4:
+				{
+					Mag++;
+					break;
+				}
+				case 3:
+				{
+					Casings++;
+					break;
+				}
+				case 2:
+				{
+					NineMil++;
+					break;
+				}
+				case 1:
+				{
+					NMCasings++;
+					break;
+				}
+			}
+		}
+	}
+	
+	override void OnBackTransfer(HDWeapon wpn)
+	{
+		for (int i = BUGS_CYL1; i <= BUGS_CYL6; i++)
+		{
+		if (Mag)
+			{
+			wpn.WeaponStatus[i] = 4;
+			Mag--;
+			}
+		else if (NineMil)
+			{
+			wpn.WeaponStatus[i] = 2;
+			NineMil--;
+			}
+		else if (Casings)
+			{
+			wpn.WeaponStatus[i] = 3;
+			Casings--;
+			}
+		else if (NMCasings)
+			{
+			wpn.WeaponStatus[i] = 1;
+			NMCasings--;
+			}
+		else wpn.WeaponStatus[i] = 0;
+		}		
+	}
+	
+}

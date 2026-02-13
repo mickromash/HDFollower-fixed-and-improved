@@ -1,0 +1,112 @@
+class FW_Pistol : FollowerWeapon
+{
+	int FireSelector;
+	
+	override string GetName() { return "Pistol"; }
+	override string GetIcon() { return "PISTA0"; }
+	override class<HDAmmo>, class<HDMagAmmo>, int GetAmmoType() { return 'HDPistolAmmo', 'HD9mMag15', 15; }
+	override Name GetRealWeapon() { return 'HDPistol'; }
+
+	override FireSequenceResult DoFiringSequence(out int ticker, Actor trgt)
+	{
+		switch (ticker) {
+			case 0: {
+				Owner.tics++;
+				Owner.frame++; // [Ace] Muzzle flash frame.
+				Owner.A_StartSound("weapons/pistol", CHAN_WEAPON);
+				HDBulletActor.FireBullet(Owner, "HDB_9", Owner.GunHeight, speedfactor: frandom(0.97,1.03) );
+				HDWeapon.EjectCasing(Owner, 'HDSpent9mm',frandom(-1,2),(frandom(0.2,0.3),-frandom(7,7.5),frandom(0,0.2)),(0,0,-2));
+				ChamberedRound = CRType_Empty;
+				Owner.A_AlertMonsters();
+				if (!TryChamberRound())
+				{
+					return FSResult_End;
+				}
+				break;
+			}
+			case 1:
+			{
+				ticker = -1;
+				break;
+			}
+		}
+		return FSResult_None;
+	}
+	override bool DoReloadSequence(out int ticker)
+	{
+		switch (ticker)
+		{
+/*			case 1:
+			{
+				Owner.A_StartSound("weapons/pismagclick2");
+				break;
+			}*/
+			case 4:
+			{
+				Owner.A_StartSound("weapons/pocket", 8);
+				Owner.A_StartSound("weapons/pismagclick2");
+				EjectMag();
+				break;
+			}
+			case 16:
+			{
+				TryReload();
+				Owner.A_StartSound("weapons/pismagclick", 9);
+				break;
+			}
+			case 24:
+			{
+				if (!TryChamberRound())
+				{
+					return true;
+				}
+				else
+				{
+					Owner.A_StartSound("weapons/pischamber2", 8);
+				}
+				break;
+			}
+			case 26:
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+	override int AssessPriority(Actor trgt, int shields, bool multitarget)
+	{
+		if (trgt is 'PlayerPawn')
+		{
+			return WPriority_VeryLow;
+		}
+		if (trgt.bBOSS || trgt is 'PainLord')
+		{
+			return WPriority_Lowest;
+		}
+		if (trgt is 'Necromancer' && !multitarget)
+		{
+			return WPriority_VeryLow;
+		}
+		if (trgt is 'PainBringer' || shields > 300)
+		{
+			return WPriority_Medium;
+		}
+		return WPriority_Lowest;
+	}
+
+	override void OnTransfer(HDWeapon wpn)
+	{
+		Mag = wpn.WeaponStatus[PISS_MAG];
+		ChamberedRound = wpn.WeaponStatus[PISS_CHAMBER];
+		FireSelector = wpn.WeaponStatus[0] & PISF_SELECTFIRE? 1 : 0;
+	}
+	
+	override void OnBackTransfer(HDWeapon wpn)
+	{
+		wpn.WeaponStatus[PISS_MAG] = Mag;
+		wpn.WeaponStatus[PISS_CHAMBER] = ChamberedRound;
+		
+		if(FireSelector)wpn.WeaponStatus[0]|= PISF_SELECTFIRE;
+		else wpn.WeaponStatus[0]&=~ PISF_SELECTFIRE;
+	}
+}
