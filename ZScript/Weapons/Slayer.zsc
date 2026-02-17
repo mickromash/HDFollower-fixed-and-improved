@@ -1,0 +1,172 @@
+class FW_Slayer : FollowerWeapon
+{
+	int LChoke, RChoke, SpentShells;
+	override string GetName() { return "Slayer"; }
+	override string GetIcon() { return "SLAYA0"; }
+	override class<HDAmmo>, class<HDMagAmmo>, int GetAmmoType() { return 'HDShellAmmo', null, 2; }
+	override Name GetRealWeapon() { return 'Slayer'; }
+	override double GetAdjustmentMult() { return 0.85; }
+
+	override FireSequenceResult DoFiringSequence(out int ticker, Actor trgt)
+	{
+		switch (ticker)
+		{
+			case 0:
+			{
+				Owner.frame++;
+				double ShotPower = HDShotgun.GetShotPower();
+				double Spread = 3 * ShotPower;
+				double SpeedFactor = 1.2 * ShotPower;
+				double ShotHeight = Owner.GunHeight;
+				
+				if (Mag < 1)
+					{
+					return FSResult_End;
+					}
+
+				TryChamberRound();
+
+				HDBulletActor.FireBullet(Owner, "HDB_wad", ShotHeight);
+				let p = HDBulletActor.FireBullet(Owner, "HDB_00", ShotHeight, spread: Spread, speedfactor: SpeedFactor, amount: 10);
+				DistantNoise.Make(p, "world/shotgunfar");
+				Owner.A_StartSound("weapons/slayersingle", CHAN_WEAPON,CHANF_OVERLAP);
+				Owner.A_AlertMonsters();
+				
+				ChamberedRound = CRType_Empty;
+				SpentShells++;
+				
+				if (trgt && trgt.SpawnHealth() >= 200)
+				{
+				TryChamberRound();
+
+				HDBulletActor.FireBullet(Owner, "HDB_wad", ShotHeight);
+				let p = HDBulletActor.FireBullet(Owner, "HDB_00", ShotHeight, spread: Spread, speedfactor: SpeedFactor, amount: 10);
+				DistantNoise.Make(p, "world/shotgunfar");
+				Owner.A_StartSound("weapons/slayersingle", CHAN_WEAPON,CHANF_OVERLAP);
+				Owner.A_AlertMonsters();
+				}
+				break;
+			}
+			case 2:
+			{
+				ticker = -1;
+				break;
+			}
+		}
+		return FSResult_None;
+	}
+	override bool DoReloadSequence(out int ticker)
+	{
+		switch (ticker)
+		{
+			case 1:
+			{
+				Owner.A_StartSound("weapons/sshoto", 8);
+				for (int i = SpentShells; i > 0; i--)
+				{
+					Owner.A_SpawnItemEx("HDSpentShell", cos(Owner.pitch) * 4, 0, Owner.height - 10 - sin(Owner.pitch) * 4, Owner.vel.x, Owner.vel.y, Owner.vel.z + frandom(2, 3), frandom(-1, 1), SXF_ABSOLUTEMOMENTUM | SXF_NOCHECKPOSITION | SXF_TRANSFERPITCH );
+				}
+				SpentShells = 0;
+				break;
+			}
+			case 23:
+			{
+				Owner.A_StartSound("weapons/sshotl", 9);
+				TryReload();
+				TryReload();
+				break;
+			}
+			case 31:
+			{
+				Owner.A_StartSound("weapons/sshotc", 8);
+			}
+			case 32:
+			{
+				return FSResult_End;
+			}
+		}
+		return FSResult_None;
+	}
+	override int AssessPriority(Actor trgt, int shields, bool multitarget)
+	{
+		if (trgt is 'PlayerPawn')
+		{
+			return WPriority_Medium;
+		}
+		if (trgt.bBOSS || trgt is 'PainLord')
+		{
+			return WPriority_Lowest;
+		}
+		if (trgt is 'Necromancer' && !multitarget)
+		{
+			return WPriority_High;
+		}
+		if (trgt is 'PainBringer' || shields > 300)
+		{
+			return WPriority_Low;
+		}
+		if (trgt.FindInventory('HDArmourWorn'))
+		{
+			return WPriority_Medium;
+		}
+		if (multitarget)
+		{
+			return WPriority_Nope;
+		}
+		if (trgt.SpawnHealth() > 200)
+		{
+			return WPriority_VeryHigh;
+		}
+		return WPriority_High;
+	}
+
+	override void OnTransfer(HDWeapon wpn)
+	{	
+		for (int i = SLAYS_CHAMBER1; i <= SLAYS_CHAMBER2; i++)
+		{
+			int ThisChamber = wpn.WeaponStatus[i];
+			if (ThisChamber == 2)
+				{
+				Mag++;
+				}
+			else if (ThisChamber == 1)
+				{
+				SpentShells++;
+				}
+		}
+
+		ChamberedRound = CRType_Empty;
+		LChoke = wpn.WeaponStatus[SLAYS_CHOKE1];
+		RChoke = wpn.WeaponStatus[SLAYS_CHOKE2];
+		
+		if (wpn.WeaponStatus[SHOTS_SIDESADDLE] > 0)
+		{
+			Inventory sh = Inventory(Actor.Spawn('HDShellAmmo', Owner.pos));
+			sh.Amount = wpn.WeaponStatus[SHOTS_SIDESADDLE];
+			Owner.AddItem(sh, sh.Amount, flags: Owner.FIF_FORCE);
+		}
+	}
+	
+	override void OnBackTransfer(HDWeapon wpn)
+	{
+		for (int i = SLAYS_CHAMBER1; i <= SLAYS_CHAMBER2; i++)
+		{
+			if (Mag)
+			{
+				wpn.WeaponStatus[i] = 2;
+				Mag--;
+			}
+			else if (SpentShells)
+			{
+				wpn.WeaponStatus[i] = 1;
+				SpentShells--;
+			}
+			else wpn.WeaponStatus[i] = 0;
+		}
+		
+		wpn.WeaponStatus[SHOTS_SIDESADDLE] = 0;
+		wpn.WeaponStatus[SLAYS_CHOKE1] = LChoke;
+		wpn.WeaponStatus[SLAYS_CHOKE2] = RChoke;
+		
+	}
+}
