@@ -3,7 +3,7 @@ class FW_Boss : FollowerWeapon
 	int frontreticle, CustomChamb;
 	override string GetName() { return "Boss Rifle"; }
 	override string GetIcon() { return "BORFA0"; }
-	override class<HDAmmo>, class<HDMagAmmo>, int GetAmmoType() { return 'SevenMilAmmo', 'HD7mClip', 10; }
+	override String, class<HDMagAmmo>, int GetAmmoType() { return 'SevenMilAmmo', 'HD7mClip', 10; }
 	override Name GetRealWeapon() { return 'BossRifle'; }
 	override string GetLocalizationTag() { return "Boss"; }
 	override double GetAdjustmentMult() { return 0.40; }

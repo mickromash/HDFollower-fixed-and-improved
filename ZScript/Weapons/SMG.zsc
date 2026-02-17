@@ -3,7 +3,7 @@ class FW_SMG : FollowerWeapon
 	int fireswitch, reflexsight, CrossDot;
 	override string GetName() { return "SMG"; }
 	override string GetIcon() { return "SMGNA0"; }
-	override class<HDAmmo>, class<HDMagAmmo>, int GetAmmoType() { return 'HDPistolAmmo', 'HD9mMag30', 30; }
+	override String, class<HDMagAmmo>, int GetAmmoType() { return 'HDPistolAmmo', 'HD9mMag30', 30; }
 	override Name GetRealWeapon() { return 'HDSMG'; }
 
 	override FireSequenceResult DoFiringSequence(out int ticker, Actor trgt)

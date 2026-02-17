@@ -1,6 +1,10 @@
+#include "ZScript/Weapons/Pistol.zsc"
+#include "ZScript/Weapons/Revolver.zsc"
 #include "ZScript/Weapons/SMG.zsc"
 #include "ZScript/Weapons/Hunter.zsc"
+#include "ZScript/Weapons/Slayer.zsc"
 #include "ZScript/Weapons/ZM66.zsc"
+#include "ZScript/Weapons/Blooper.zsc"
 #include "ZScript/Weapons/RocketLauncher.zsc"
 #include "ZScript/Weapons/Liberator.zsc"
 #include "ZScript/Weapons/Boss.zsc"
@@ -251,10 +255,29 @@ extend class HDFollower
 			{
 				SelWeapon.WeaponFlags |= FollowerWeapon.FWF_DROPMAG;
 			}
-			class<HDAmmo> AType, MType; int MaxMag;
-			[AType, MType, MaxMag] = SelWeapon.GetAmmoType();
-			if((!(flags & RLF_DROPMAG) && GetAmount(MType)<=MaxMag && SelWeapon.Mag+GetAmount(AType)<=MaxMag)||
-			(!MType && SelWeapon.Mag+GetAmount(AType)<=MaxMag))
+			
+			String Ammos;
+			Array<String> AmmosA;
+			Array< class<HDAmmo> > ATypes;
+			class<HDAmmo> MType;
+			int MaxMag;
+			[Ammos, MType, MaxMag] = SelWeapon.GetAmmoType();
+			
+			int GotAmmo;
+			
+			if(Ammos.IndexOf(" ")<0){
+				ATypes.Push((Class<HDAmmo>)(Ammos));
+				GotAmmo = GetAmount(ATypes[0]);
+			}
+			else {
+				Ammos.Split(AmmosA, " ");
+				For(int i=0;i<AmmosA.Size();i++)ATypes.Push((Class<HDAmmo>)(AmmosA[i]));
+				
+				For(int i=0;i<ATypes.Size();i++)GotAmmo += GetAmount(ATypes[i]);
+			}
+			
+			if((!(flags & RLF_DROPMAG) && GetAmount(MType)<=MaxMag && SelWeapon.Mag+GotAmmo<=MaxMag)||
+			(!MType && SelWeapon.Mag+GotAmmo<=MaxMag))
 			PrintMessage(GetResponse("NOAMMO_"..SelWeapon.GetLocalizationTag()), "NoAmmo/"..SelWeapon.GetLocalizationTag(), PMType_Critical);
 			return true;
 		}
@@ -406,9 +429,31 @@ extend class HDFollower
 	{
 		for (int i = 0; i < Weapons.Size(); ++i)
 		{
-			class<HDAmmo> AType, MType;
-			[AType, MType] = Weapons[i].GetAmmoType();
-			if (!MType && AType == cls || MType == cls)
+			
+			String Ammos;
+			Array<String> AmmosA;
+			Array< class<HDAmmo> > ATypes;
+			class<HDAmmo> MType;
+			[Ammos, MType] = Weapons[i].GetAmmoType();
+			
+			Bool AmmoUsed = false;
+			
+			if(Ammos.IndexOf(" ")<0){
+				ATypes.Push((class<HDAmmo>)(Ammos));
+				AmmoUsed = (ATypes[0] == cls);
+			}
+			else {
+				Ammos.Split(AmmosA, " ");
+				For(int i=0;i<AmmosA.Size();i++)ATypes.Push((class<HDAmmo>)(AmmosA[i]));
+				For(int i=0;i<ATypes.Size();i++){
+					if(ATypes[i] == cls){
+						AmmoUsed = true;
+						Break;
+					}
+				}
+			}
+			
+			if (!MType && AmmoUsed || MType == cls)
 			{
 				return true;
 			}

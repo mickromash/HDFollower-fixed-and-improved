@@ -91,7 +91,7 @@ class FollowerWeapon abstract
 	
 	abstract string GetName() const;
 	abstract string GetIcon() const;
-	abstract class<HDAmmo>, class<HDMagAmmo>, int GetAmmoType() const;
+	abstract String, class<HDMagAmmo>, int GetAmmoType() const;
 	abstract Name GetRealWeapon() const;
 	abstract int AssessPriority(Actor trgt, int shields, bool multitarget);
 	
@@ -161,22 +161,10 @@ class FollowerWeapon abstract
 
 		if (MType)
 		{
-			/*if(MType is 'HD7mMag')
-			{
-				InventorySlot wpnAmmo = Owner.FindHighestAmount(MType);
-				int rndcnt=wpnAmmo.Amount%100;
-				
-				Mag=rndcnt;
-				MagRecast=clamp(rndcnt-(wpnAmmo.Amount/100),0,rndcnt);
-				Owner.TakeInvItem(wpnAmmo, HDFollower.FIF_FORCE | HDFollower.FIF_REMOVE);
-			}
-			else
-			{*/
-				InventorySlot wpnAmmo = Owner.FindHighestAmount(MType);
-				Mag = wpnAmmo.Amount;
-				MagRecast = wpnAmmo.Recast;
-				Owner.TakeInvItem(wpnAmmo, HDFollower.FIF_FORCE | HDFollower.FIF_REMOVE);
-			//}
+			InventorySlot wpnAmmo = Owner.FindHighestAmount(MType);
+			Mag = wpnAmmo.Amount;
+			MagRecast = wpnAmmo.Recast;
+			Owner.TakeInvItem(wpnAmmo, HDFollower.FIF_FORCE | HDFollower.FIF_REMOVE);
 		}
 		else if (AType)
 		{
@@ -253,9 +241,30 @@ class FollowerWeapon abstract
 
 	clearscope bool HasSpare()
 	{
-		class<HDAmmo> AType, MType;
-		[AType, MType] = GetAmmoType();
-		return MType && Owner.GetAmount(MType) > 0 || !MType && Owner.GetAmount(AType) > 0;
+		String Ammos;
+		Array<String> AmmosA;
+		Array< class<HDAmmo> > ATypes;
+		class<HDAmmo> MType;
+		[Ammos, MType] = GetAmmoType();
+		
+		Bool GotAmmo = false;
+		
+		if(Ammos.IndexOf(" ")<0){
+			ATypes.Push((class<HDAmmo>)(Ammos));
+			GotAmmo = (Owner.GetAmount(ATypes[0]) > 0);
+		}
+		else {
+			Ammos.Split(AmmosA, " ");
+			For(int i=0;i<AmmosA.Size();i++)ATypes.Push((class<HDAmmo>)(AmmosA[i]));
+			For(int i=0;i<ATypes.Size();i++){
+				if(Owner.GetAmount(ATypes[i])>0){
+					GotAmmo = true;
+					Break;
+				}
+			}
+		}
+		
+		return MType && Owner.GetAmount(MType) > 0 || !MType && GotAmmo;
 	}
 
 	// --------------------------------------------------

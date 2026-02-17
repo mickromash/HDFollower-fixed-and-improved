@@ -3,7 +3,7 @@ class FW_Hunter : FollowerWeapon
 	int Choke, Semi, FullAuto;
 	override string GetName() { return "Hunter"; }
 	override string GetIcon() { return "HUNTA0"; }
-	override class<HDAmmo>, class<HDMagAmmo>, int GetAmmoType() { return 'HDShellAmmo', null, 7; }
+	override String, class<HDMagAmmo>, int GetAmmoType() { return 'HDShellAmmo', null, 7; }
 	override Name GetRealWeapon() { return 'Hunter'; }
 	override double GetAdjustmentMult() { return 0.85; }
 

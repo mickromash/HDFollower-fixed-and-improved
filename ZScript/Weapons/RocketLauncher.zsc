@@ -3,7 +3,7 @@ class FW_RocketLauncher : FollowerWeapon
 	bool nomag;
 	override string GetName() { return "Rocket Launcher"; }
 	override string GetIcon() { return "LAUNA0"; }
-	override class<HDAmmo>, class<HDMagAmmo>, int GetAmmoType() { return 'HDRocketAmmo', null, 5; }
+	override String, class<HDMagAmmo>, int GetAmmoType() { return 'HDRocketAmmo', null, 5; }
 	override Name GetRealWeapon() { return 'HDRL'; }
 	override string GetLocalizationTag() { return "RL"; }
 	override double GetAdjustmentMult() { return 0.85; }

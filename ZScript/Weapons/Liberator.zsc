@@ -3,7 +3,7 @@ class FW_Liberator : FollowerWeapon
 	int nogl, nobull, noauto, lefty, altreticle, frontreticle, Crossdot;
 	override string GetName() { return "Liberator"; }
 	override string GetIcon() { return "BRLLA0"; }
-	override class<HDAmmo>, class<HDMagAmmo>, int GetAmmoType() { return 'SevenMilAmmo', 'HD7mMag', 30; }
+	override String, class<HDMagAmmo>, int GetAmmoType() { return 'SevenMilAmmo', 'HD7mMag', 30; }
 	override Name GetRealWeapon() { return 'LiberatorRifle'; }
 	override double GetAdjustmentMult() { return 0.70; }
 

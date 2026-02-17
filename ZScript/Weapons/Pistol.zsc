@@ -4,7 +4,7 @@ class FW_Pistol : FollowerWeapon
 	
 	override string GetName() { return "Pistol"; }
 	override string GetIcon() { return "PISTA0"; }
-	override class<HDAmmo>, class<HDMagAmmo>, int GetAmmoType() { return 'HDPistolAmmo', 'HD9mMag15', 15; }
+	override String, class<HDMagAmmo>, int GetAmmoType() { return 'HDPistolAmmo', 'HD9mMag15', 15; }
 	override Name GetRealWeapon() { return 'HDPistol'; }
 
 	override FireSequenceResult DoFiringSequence(out int ticker, Actor trgt)

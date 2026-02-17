@@ -2,7 +2,7 @@ class FW_Bronto : FollowerWeapon
 {
 	override string GetName() { return "Brontornis"; }
 	override string GetIcon() { return "BLSTA0"; }
-	override class<HDAmmo>, class<HDMagAmmo>, int GetAmmoType() { return 'BrontornisRound', null, 1; }
+	override String, class<HDMagAmmo>, int GetAmmoType() { return 'BrontornisRound', null, 1; }
 	override Name GetRealWeapon() { return 'Brontornis'; }
 	override string GetLocalizationTag() { return "Bronto"; }
 

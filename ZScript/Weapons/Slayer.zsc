@@ -3,7 +3,7 @@ class FW_Slayer : FollowerWeapon
 	int LChoke, RChoke, SpentShells;
 	override string GetName() { return "Slayer"; }
 	override string GetIcon() { return "SLAYA0"; }
-	override class<HDAmmo>, class<HDMagAmmo>, int GetAmmoType() { return 'HDShellAmmo', null, 2; }
+	override String, class<HDMagAmmo>, int GetAmmoType() { return 'HDShellAmmo', null, 2; }
 	override Name GetRealWeapon() { return 'Slayer'; }
 	override double GetAdjustmentMult() { return 0.85; }
 
@@ -20,9 +20,9 @@ class FW_Slayer : FollowerWeapon
 				double ShotHeight = Owner.GunHeight;
 				
 				if (Mag < 1)
-					{
+				{
 					return FSResult_End;
-					}
+				}
 
 				TryChamberRound();
 
@@ -121,18 +121,18 @@ class FW_Slayer : FollowerWeapon
 	}
 
 	override void OnTransfer(HDWeapon wpn)
-	{	
+	{
 		for (int i = SLAYS_CHAMBER1; i <= SLAYS_CHAMBER2; i++)
 		{
 			int ThisChamber = wpn.WeaponStatus[i];
 			if (ThisChamber == 2)
-				{
+			{
 				Mag++;
-				}
+			}
 			else if (ThisChamber == 1)
-				{
+			{
 				SpentShells++;
-				}
+			}
 		}
 
 		ChamberedRound = CRType_Empty;

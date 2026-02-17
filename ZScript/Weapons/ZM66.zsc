@@ -3,7 +3,7 @@ class FW_ZM66 : FollowerWeapon
 	int nogl, noauto, Crossdot;
 	override string GetName() { return "ZM66"; }
 	override string GetIcon() { return "RIFLA0"; }
-	override class<HDAmmo>, class<HDMagAmmo>, int GetAmmoType() { return 'FourMilAmmo', 'HD4mMag', 50; }
+	override String, class<HDMagAmmo>, int GetAmmoType() { return 'FourMilAmmo', 'HD4mMag', 50; }
 	override Name GetRealWeapon() { return 'ZM66AssaultRifle'; }
 	override double GetAdjustmentMult() { return 0.75; }
 

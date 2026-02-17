@@ -2,7 +2,7 @@ class FW_BlooperLauncher : FollowerWeapon
 {
 	override string GetName() { return "Blooper Grenader Launcher"; }
 	override string GetIcon() { return "BLOPA0"; }
-	override class<HDAmmo>, class<HDMagAmmo>, int GetAmmoType() { return 'HDRocketAmmo', null, 1; }
+	override String, class<HDMagAmmo>, int GetAmmoType() { return 'HDRocketAmmo', null, 1; }
 	override Name GetRealWeapon() { return 'Blooper'; }
 	override double GetAdjustmentMult() { return 0.85; }
 

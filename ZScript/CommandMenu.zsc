@@ -799,8 +799,25 @@ extend class FollowerHandler
 		// [Ace] Spare ammo.
 		if (!(flags2 & 1))
 		{
-			class<HDAmmo> AType, MType; int MaxMag;
-			[AType, MType, MaxMag] = wpn.GetAmmoType();
+			String Ammos;
+			Array<String> AmmosA;
+			Array< class<HDAmmo> > ATypes;
+			class<HDAmmo> MType;
+			int MaxMag;
+			[Ammos, MType, MaxMag] = wpn.GetAmmoType();
+			
+			int GotAmmo;
+			
+			if(Ammos.IndexOf(" ")<0){
+				ATypes.Push((Class<HDAmmo>)(Ammos));
+				GotAmmo = flw.GetAmount(ATypes[0]);
+			}
+			else {
+				Ammos.Split(AmmosA, " ");
+				For(int i=0;i<AmmosA.Size();i++)ATypes.Push((Class<HDAmmo>)(AmmosA[i]));
+				
+				For(int i=0;i<ATypes.Size();i++)GotAmmo += flw.GetAmount(ATypes[i]);
+			}
 
 			sb.DrawString(fnt, StringTable.Localize("$FLW_CMDAMMO"), pos + (size.x - 4, size.y - 24), flags | sb.DI_TEXT_ALIGN_RIGHT, Font.CR_WHITE);
 			string ChamberString = "";
@@ -809,7 +826,7 @@ extend class FollowerHandler
 				case FollowerWeapon.CRType_Chambered: ChamberString = "+"; break;
 				case FollowerWeapon.CRType_Spent: ChamberString = "_"; break;
 			}
-			sb.DrawString(fnt, ChamberString..sb.FormatNumber(flw.GetAmount(MType ? MType : AType), 1, 4), pos + (size.x - 4, size.y - 15), flags | sb.DI_TEXT_ALIGN_RIGHT, Font.CR_WHITE);
+			sb.DrawString(fnt, ChamberString..sb.FormatNumber((MType)?flw.GetAmount(MType) : GotAmmo, 1, 4), pos + (size.x - 4, size.y - 15), flags | sb.DI_TEXT_ALIGN_RIGHT, Font.CR_WHITE);
 
 			// [Ace] Magazine bar.
 			sb.Fill(col, pos.x + 1, pos.y + (size.y - 4), size.x - 2, 1, flags);
