@@ -1,11 +1,22 @@
 class FW_Revolver : FollowerWeapon
 {
-	int Casings, NineMil, NMCasings;
+	int Chamber[6];
 	override string GetName() { return "Revolver"; }
 	override string GetIcon() { return "REVLA0"; }
-	override class<HDAmmo>, class<HDMagAmmo>, int GetAmmoType() { return 'HDRevolverAmmo', null, 6; }
+	override String, class<HDMagAmmo>, int GetAmmoType() { return 'HDRevolverAmmo HDPistolAmmo', null, 6; }
 	override Name GetRealWeapon() { return 'HDRevolver'; }
-
+	
+	Void RotateCylinder()
+	{
+		int cylbak=Chamber[0];
+		Chamber[0]=Chamber[5];
+		Chamber[5]=Chamber[4];
+		Chamber[4]=Chamber[3];
+		Chamber[3]=Chamber[2];
+		Chamber[2]=Chamber[1];
+		Chamber[1]=cylbak;
+	}
+	
 	override FireSequenceResult DoFiringSequence(out int ticker, Actor trgt)
 	{
 		switch (ticker) {
@@ -15,19 +26,28 @@ class FW_Revolver : FollowerWeapon
 			case 4: {
 			
 				if (Mag < 1)
-					{
+				{
 					return FSResult_End;
-					}
+				}
+				
+				RotateCylinder();
+				
+				if(Chamber[0] != BUGS_NINEMIL && Chamber[0]!= BUGS_MASTERBALL){
+					Owner.A_StartSound("weapons/deinoclick",8,CHANF_OVERLAP);
+					ticker = 6;
+					Break;
+				}
 
 				TryChamberRound();
-
+				
 				Owner.tics++;
 				Owner.frame++; // [Ace] Muzzle flash frame.
 				Owner.A_StartSound("weapons/deinoblast1",CHAN_WEAPON,CHANF_OVERLAP,0.5);
 				Owner.A_StartSound("weapons/deinoblast2",CHAN_WEAPON,CHANF_OVERLAP,0.4);
-				HDBulletActor.FireBullet(Owner, "HDB_355", Owner.GunHeight, speedfactor: frandom(0.97,1.03) );
+				HDBulletActor.FireBullet(Owner, (Chamber[0]==BUGS_NINEMIL)?"HDB_9":"HDB_355", Owner.GunHeight, speedfactor: frandom(0.97,1.03) );
 				ChamberedRound = CRType_Empty;
-				Casings++;
+				
+				Chamber[0]=(Chamber[0]==BUGS_NINEMIL)?BUGS_NINEMILSPENT:BUGS_MASTERBALLSPENT;
 				break;
 			}
 			case 8:
@@ -49,21 +69,25 @@ class FW_Revolver : FollowerWeapon
 			case 4:
 			{
 				Owner.A_StartSound("weapons/deinoeject", 8);
-				for (int i = Casings; i > 0; i--)
-				{
-					Owner.A_SpawnItemEx("HDSpent355", cos(Owner.pitch) * 4, 0, Owner.height - 10 - sin(Owner.pitch) * 4, Owner.vel.x, Owner.vel.y, Owner.vel.z + frandom(2, 3), frandom(-1, 1), SXF_ABSOLUTEMOMENTUM | SXF_NOCHECKPOSITION | SXF_TRANSFERPITCH );
+				For(int i=0;i<6;i++){
+					Switch(Chamber[i])
+					{
+						Case BUGS_NINEMILSPENT:
+							Chamber[i] = 0;
+							Owner.A_SpawnItemEx("HDSpent9mm", cos(Owner.pitch) * 4, 0, Owner.height - 10 - sin(Owner.pitch) * 4, Owner.vel.x, Owner.vel.y, Owner.vel.z + frandom(2, 3), frandom(-1, 1), SXF_ABSOLUTEMOMENTUM | SXF_NOCHECKPOSITION | SXF_TRANSFERPITCH );
+							Break;
+						Case BUGS_NINEMIL:
+							Chamber[i] = 0;
+							InventorySlot NineMil = Owner.FindLowestAmount('HDPistolAmmo');
+							if(NineMil)NineMil.Amount++;
+							Mag--;
+							Break;
+						Case BUGS_MASTERBALLSPENT:
+							Chamber[i] = 0;
+							Owner.A_SpawnItemEx("HDSpent355", cos(Owner.pitch) * 4, 0, Owner.height - 10 - sin(Owner.pitch) * 4, Owner.vel.x, Owner.vel.y, Owner.vel.z + frandom(2, 3), frandom(-1, 1), SXF_ABSOLUTEMOMENTUM | SXF_NOCHECKPOSITION | SXF_TRANSFERPITCH );
+							Break;
+					}
 				}
-				for (int i = NineMil; i > 0; i--)
-				{
-					Owner.A_DropItem('HDPistolAmmo');
-				}
-				for (int i = NMCasings; i > 0; i--)
-				{
-					Owner.A_SpawnItemEx("HDSpent9mm", cos(Owner.pitch) * 4, 0, Owner.height - 10 - sin(Owner.pitch) * 4, Owner.vel.x, Owner.vel.y, Owner.vel.z + frandom(2, 3), frandom(-1, 1), SXF_ABSOLUTEMOMENTUM | SXF_NOCHECKPOSITION | SXF_TRANSFERPITCH );
-				}
-				Casings = 0;
-				NineMil = 0;
-				NMCasings = 0;
 				break;
 			}
 			case 22:
@@ -112,30 +136,8 @@ class FW_Revolver : FollowerWeapon
 		ChamberedRound = CRType_Empty;
 		for (int i = BUGS_CYL1; i <= BUGS_CYL6; i++)
 		{
-			int ThisChamber=wpn.WeaponStatus[i];
-			switch (ThisChamber)
-			{
-				case 4:
-				{
-					Mag++;
-					break;
-				}
-				case 3:
-				{
-					Casings++;
-					break;
-				}
-				case 2:
-				{
-					NineMil++;
-					break;
-				}
-				case 1:
-				{
-					NMCasings++;
-					break;
-				}
-			}
+			Chamber[i-1] = wpn.WeaponStatus[i];
+			if(Chamber[i-1] == BUGS_MASTERBALL || Chamber[i-1] == BUGS_NINEMIL)Mag++;
 		}
 	}
 	
@@ -143,28 +145,81 @@ class FW_Revolver : FollowerWeapon
 	{
 		for (int i = BUGS_CYL1; i <= BUGS_CYL6; i++)
 		{
-		if (Mag)
-			{
-			wpn.WeaponStatus[i] = 4;
-			Mag--;
-			}
-		else if (NineMil)
-			{
-			wpn.WeaponStatus[i] = 2;
-			NineMil--;
-			}
-		else if (Casings)
-			{
-			wpn.WeaponStatus[i] = 3;
-			Casings--;
-			}
-		else if (NMCasings)
-			{
-			wpn.WeaponStatus[i] = 1;
-			NMCasings--;
-			}
-		else wpn.WeaponStatus[i] = 0;
-		}		
+			wpn.WeaponStatus[i] = Chamber[i-1];
+		}
 	}
 	
+	Override Void EmptyWeapon()
+	{
+		class<HDAmmo> AType, AType2;
+		String Ammos = GetAmmoType();
+		
+		AType = Ammos.Left(Ammos.IndexOf(" "));
+		AType2 = Ammos.Mid(Ammos.IndexOf(" ")+1);
+
+		For(int i=0;i<6;i++){
+			Switch(Chamber[i])
+			{
+				Case BUGS_NINEMILSPENT:
+					Owner.A_SpawnItemEx("HDSpent9mm", random(0, 16), 0, 0, frandom(1.0, 2.0), 0, frandom(2.0, 5.0), 0, SXF_NOCHECKPOSITION);
+					Break;
+				Case BUGS_NINEMIL:
+					Owner.A_SpawnItemEx("HDPistolAmmo", random(0, 16), 0, 0, frandom(1.0, 2.0), 0, frandom(2.0, 5.0), 0, SXF_NOCHECKPOSITION);
+					Break;
+				Case BUGS_MASTERBALLSPENT:
+					Owner.A_SpawnItemEx("HDSpent355", random(0, 16), 0, 0, frandom(1.0, 2.0), 0, frandom(2.0, 5.0), 0, SXF_NOCHECKPOSITION);
+					Break;
+				Case BUGS_MASTERBALL:
+					Owner.A_SpawnItemEx("HDRevolverAmmo", random(0, 16), 0, 0, frandom(1.0, 2.0), 0, frandom(2.0, 5.0), 0, SXF_NOCHECKPOSITION);
+			}
+			Chamber[i] = 0;
+		}
+		Mag = MagRecast = 0;
+	}
+	
+	Override ReloadResult TryReload(int flags)
+	{
+		class<HDAmmo> AType, AType2;
+		String Ammos = GetAmmoType();
+		
+		AType = Ammos.Left(Ammos.IndexOf(" "));
+		AType2 = Ammos.Mid(Ammos.IndexOf(" ")+1);
+				
+		if(Mag >= 6)
+		{
+			return RResult_MagFull;
+		}
+		if(Owner.GetAmount(AType) == 0 && Owner.GetAmount(AType2) == 0)
+		{
+			return RResult_NoAmmo;
+		}
+		if(flags & TRF_CHECK)
+		{
+			return RResult_CanReload;
+		}
+		
+		For(int i=0;i<6;i++)
+		{
+			if(Chamber[i]!=0)Continue;
+			
+			Class<HDAmmo> Loading = AType;
+			if(Owner.GetAmount(Loading)<1){
+				Loading = AType2;
+				Chamber[i] = BUGS_NINEMIL;
+			}
+			else Chamber[i] = BUGS_MASTERBALL;
+						
+			InventorySlot wpnAmmo = Owner.FindLowestAmount(Loading);
+			Mag++;
+			wpnAmmo.Amount--;
+			if(wpnAmmo.Amount == 0)
+			{
+				Owner.TakeInvItem(wpnAmmo, HDFollower.FIF_FORCE | HDFollower.FIF_REMOVE);
+			}
+			
+			Break;
+		}
+
+		return RResult_CanReload;
+	}
 }
